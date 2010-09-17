@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/account_settings">
+        <EditTextPreference
+            android:key="login"
+            android:title="@string/login" android:defaultValue="xxxx@gmail.com"/>
+        <EditTextPreference
+            android:key="password"
+            android:password="true"
+            android:title="@string/password"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/additionnal_settings">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="startAtBoot"
+            android:title="@string/start_at_boot"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/notify_me_on">
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:title="@string/application_connection"
+            android:key="notifyApplicationConnection"/>
+        <CheckBoxPreference
+            android:key="notifyBattery"
+            android:defaultValue="true"
+            android:title="@string/battery_state"/>
+        <CheckBoxPreference
+            android:key="notifyIncomingSms"
+            android:defaultValue="true"
+            android:title="@string/incoming_sms"/>
+        <CheckBoxPreference
+            android:key="notifyIncomingCalls"
+            android:defaultValue="true"
+            android:title="@string/incoming_calls"/>
+        <CheckBoxPreference
+            android:key="notifySmsSent"
+            android:defaultValue="true"
+            android:title="@string/sms_sent"/>
+        <CheckBoxPreference
+            android:key="notifySmsDelivered"
+            android:defaultValue="true"
+            android:title="@string/sms_delivered"/>
+    </PreferenceCategory>
+</PreferenceScreen>
