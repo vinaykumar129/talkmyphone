@@ -1,6 +1,6 @@
 package com.googlecode.talkmyphone;
 
-import com.googlecode.talkmyphone.Contacts.ContactsManager;
+import com.googlecode.talkmyphone.contacts.ContactsManager;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

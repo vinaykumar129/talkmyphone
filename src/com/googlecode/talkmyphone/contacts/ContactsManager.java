@@ -1,4 +1,4 @@
-package com.googlecode.talkmyphone.Contacts;
+package com.googlecode.talkmyphone.contacts;
 
 import java.util.ArrayList;
 
@@ -82,14 +82,14 @@ public class ContactsManager {
             phone.contactName = getContactName(searchedText);
             phone.isCellPhoneNumber = true;
             phone.type = Contacts.Phones.TYPE_MOBILE;
-            
+
             res.add(phone);
         } else {
             // get the matching contacts, dictionary of < id, names >
             ArrayList<Contact> contacts = getMatchingContacts(searchedText);
             if (contacts.size() > 0) {
                 ContentResolver resolver = XmppService.getInstance().getContentResolver();
-                
+
                 for (Contact contact : contacts) {
                     Uri personUri = ContentUris.withAppendedId(People.CONTENT_URI, contact.id);
                     Uri phonesUri = Uri.withAppendedPath(personUri, People.Phones.CONTENT_DIRECTORY);
@@ -98,14 +98,14 @@ public class ContactsManager {
 
                     for (boolean hasData = c.moveToFirst() ; hasData ; hasData = c.moveToNext()) {
                         String number = Tools.getString(c,Contacts.Phones.NUMBER);
-                        
+
                         String label = Tools.getString(c,Contacts.Phones.LABEL);
                         int type = Tools.getLong(c,Contacts.Phones.TYPE).intValue();
 
                         if (label == null || label.compareTo("") != 0) {
                             label = Contacts.Phones.getDisplayLabel(XmppService.getInstance().getBaseContext(), type, "").toString();
                         }
-                        
+
                         Phone phone = new Phone();
                         phone.number = number;
                         phone.cleanNumber = cleanPhoneNumber(phone.number);
@@ -113,7 +113,7 @@ public class ContactsManager {
                         phone.isCellPhoneNumber = isCellPhoneNumber(phone.number);
                         phone.label = label;
                         phone.type = type;
-                                                 
+
                         res.add(phone);
                     }
                 }
@@ -129,13 +129,13 @@ public class ContactsManager {
     public static ArrayList<Phone> getMobilePhones(String searchedText) {
         ArrayList<Phone> res = new ArrayList<Phone>();
         ArrayList<Phone> phones = getPhones(searchedText);
-        
+
         for (Phone phone : phones) {
             if (phone.isCellPhoneNumber) {
                 res.add(phone);
             }
         }
-        
+
         // manage not french cell phones
         if (res.size() == 0) {
             for (Phone phone : phones) {
@@ -144,7 +144,7 @@ public class ContactsManager {
                 }
             }
         }
-            
+
         return res;
     }
 
@@ -154,7 +154,7 @@ public class ContactsManager {
                      .replace(" ", "")
                      .replace(internationalPrefix, "0");
     }
-    
+
     public static boolean isCellPhoneNumber(String number) {
         return cleanPhoneNumber(number).matches(cellPhonePattern);
     }

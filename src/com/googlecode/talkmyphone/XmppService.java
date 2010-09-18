@@ -33,9 +33,9 @@ import android.telephony.gsm.SmsManager;
 import android.text.ClipboardManager;
 import android.widget.Toast;
 
-import com.googlecode.talkmyphone.Contacts.Contact;
-import com.googlecode.talkmyphone.Contacts.ContactsManager;
-import com.googlecode.talkmyphone.Contacts.Phone;
+import com.googlecode.talkmyphone.contacts.Contact;
+import com.googlecode.talkmyphone.contacts.ContactsManager;
+import com.googlecode.talkmyphone.contacts.Phone;
 
 public class XmppService extends Service {
 
@@ -72,13 +72,18 @@ public class XmppService extends Service {
     /** import the preferences */
     private void importPreferences() {
         SharedPreferences prefs = getSharedPreferences("TalkMyPhone", 0);
-        String serverHost = "talk.google.com";
-        int serverPort = 5222;
-        String serviceName = "gmail.com";
+        String serverHost = prefs.getString("serverHost", "");
+        int serverPort = prefs.getInt("serverPort", 0);
+        String serviceName = prefs.getString("serviceName", "");
         mConnectionConfiguration = new ConnectionConfiguration(serverHost, serverPort, serviceName);
-        mLogin = prefs.getString("login", "");
+        mTo = prefs.getString("notifiedAddress", "");
         mPassword =  prefs.getString("password", "");
-        mTo = prefs.getString("login", "");
+        boolean useDifferentAccount = prefs.getBoolean("useDifferentAccount", false);
+        if (useDifferentAccount) {
+            mLogin = prefs.getString("login", "");
+        } else{
+            mLogin = mTo;
+        }
         notifyApplicationConnection = prefs.getBoolean("notifyApplicationConnection", true);
         notifyBattery = prefs.getBoolean("notifyBattery", true);
         notifySmsSent = prefs.getBoolean("notifySmsSent", true);
@@ -227,10 +232,21 @@ public class XmppService extends Service {
     private void initBatteryMonitor() {
         if (notifyBattery) {
             mBatInfoReceiver = new BroadcastReceiver(){
+                private int lastPercentageNotified = -1;
                 @Override
                 public void onReceive(Context arg0, Intent intent) {
-                  int level = intent.getIntExtra("level", 0);
-                  send("Battery level " + level + "%");
+                    int level = intent.getIntExtra("level", 0);
+                    if (lastPercentageNotified == -1) {
+                        notifyAndSavePercentage(level);
+                    } else {
+                        if (level != lastPercentageNotified && level % 5 == 0) {
+                            notifyAndSavePercentage(level);
+                        }
+                    }
+                }
+                private void notifyAndSavePercentage(int level) {
+                    send("Battery level " + level + "%");
+                    lastPercentageNotified = level;
                 }
             };
             registerReceiver(mBatInfoReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
@@ -279,7 +295,7 @@ public class XmppService extends Service {
             initMediaPlayer();
             initConnection();
 
-            if (mConnection.isAuthenticated()) {
+            if (mConnection.isConnected() && mConnection.isAuthenticated()) {
                 Toast.makeText(this, "TalkMyPhone started", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, "TalkMyPhone failed to authenticate", Toast.LENGTH_SHORT).show();
