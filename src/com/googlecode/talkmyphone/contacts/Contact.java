@@ -1,4 +1,4 @@
-package com.googlecode.talkmyphone.Contacts;
+package com.googlecode.talkmyphone.contacts;
 
 public class Contact {
     public Long id;

@@ -1,4 +1,4 @@
-package com.googlecode.talkmyphone.Contacts;
+package com.googlecode.talkmyphone.contacts;
 
 public class Phone {
     public String contactName;
