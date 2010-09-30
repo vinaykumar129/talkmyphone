@@ -194,17 +194,15 @@ public class ContactsManager {
         ArrayList<Phone> phones = getPhones(searchedText);
 
         for (Phone phone : phones) {
-            if (phone.isCellPhoneNumber) {
+            if (phone.type == Contacts.Phones.TYPE_MOBILE) {
                 res.add(phone);
             }
         }
 
-        // manage not french cell phones
+        // manage all phones number
         if (res.size() == 0) {
             for (Phone phone : phones) {
-                if (phone.type == Contacts.Phones.TYPE_MOBILE) {
-                    res.add(phone);
-                }
+                res.add(phone);
             }
         }
 

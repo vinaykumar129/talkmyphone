@@ -422,7 +422,10 @@ public class XmppService extends Service {
 
 
     public void setLastRecipient(String phoneNumber) {
-        lastRecipient = phoneNumber;
+        if (lastRecipient == null || phoneNumber.compareTo(lastRecipient) != 0) {
+            lastRecipient = phoneNumber;
+            displayLastRecipient(phoneNumber);
+        }
     }
 
     /** handles the different commands */
@@ -464,11 +467,13 @@ public class XmppService extends Service {
                     setLastRecipient(contact);
                     message = args.substring(separatorPos + 1);
                     sendSMS(message, contact);
-                } else {
+                } else if (args.length() > 0) {
                     // todo set number of SMS into parameters
                     // display received SMS and sent SMS
                     contact = args;
                     readSMS(contact, 5);
+                } else {
+                    displayLastRecipient(lastRecipient);
                 }
             }
             else if (command.equals("reply")) {
@@ -529,7 +534,7 @@ public class XmppService extends Service {
                 }
             } else if (mobilePhones.size() == 1) {
                 Phone phone = mobilePhones.get(0);
-                send("Sending sms to " + ContactsManager.getContactName(phone.cleanNumber));
+                send("Sending sms to " + phone.contactName + " (" + phone.cleanNumber + ")");
                 SmsMmsManager.sendSMSByPhoneNumber(message, phone.cleanNumber);
             } else {
                 send("No match for \"" + contact + "\"");
@@ -560,6 +565,18 @@ public class XmppService extends Service {
             }
         } else {
             send("No match for \"" + searchedText + "\"");
+        }
+    }
+
+    public void displayLastRecipient(String phoneNumber) {
+        if (null == phoneNumber) {
+            send("SMS reply contact is not set");
+        } else {
+            String contact = ContactsManager.getContactName(phoneNumber);
+            if (ContactsManager.isCellPhoneNumber(phoneNumber) && contact.compareTo(phoneNumber) != 0){
+                contact += " (" + phoneNumber + ")";
+            }
+            send("SMS reply contact is " + contact);
         }
     }
 
