@@ -38,6 +38,7 @@ import com.googlecode.talkmyphone.contacts.ContactAddress;
 import com.googlecode.talkmyphone.contacts.ContactsManager;
 import com.googlecode.talkmyphone.contacts.Phone;
 import com.googlecode.talkmyphone.geo.GeoManager;
+import com.googlecode.talkmyphone.phone.PhoneManager;
 import com.googlecode.talkmyphone.sms.Sms;
 import com.googlecode.talkmyphone.sms.SmsMmsManager;
 
@@ -448,6 +449,7 @@ public class XmppService extends Service {
                 StringBuilder builder = new StringBuilder();
                 builder.append("Available commands:\n");
                 builder.append("- \"?\": shows this help.\n");
+                builder.append("- \"dial:#contact#\": dial the specified contact.\n");
                 builder.append("- \"reply:#message#\": send a sms to your last recipient with content message.\n");
                 builder.append("- \"sms:#contact#[:#message#]\": sends a sms to number with content message or display last sent sms.\n");
                 builder.append("- \"contact:#contact#\": display informations of a searched contact.\n");
@@ -489,6 +491,9 @@ public class XmppService extends Service {
 //            else if (command.equals("geo")) {
 //                geo(args);
 //            } 
+            else if (command.equals("dial")) {
+                dial(args);
+            }
             else if (command.equals("contact")) {
                 displayContacts(args);
             }
@@ -516,6 +521,39 @@ public class XmppService extends Service {
             }
         } catch (Exception ex) {
             send("Error : " + ex);
+        }
+    }
+    
+    /** dial the specified contact */
+    public void dial(String searchedText) {
+        String number = null;
+        String contact = null;
+        
+        if (ContactsManager.isCellPhoneNumber(searchedText)) {
+            number = searchedText;
+            contact = ContactsManager.getContactName(number);
+        } else {
+            ArrayList<Phone> mobilePhones = ContactsManager.getMobilePhones(searchedText);
+            if (mobilePhones.size() > 1) {
+                send("Specify more details:");
+
+                for (Phone phone : mobilePhones) {
+                    send(phone.contactName + " - " + phone.cleanNumber);
+                }
+            } else if (mobilePhones.size() == 1) {
+                Phone phone = mobilePhones.get(0);
+                contact = phone.contactName;
+                number = phone.cleanNumber;
+            } else {
+                send("No match for \"" + searchedText + "\"");
+            }
+        }
+        
+        if( number != null) {
+            send("Dial " + contact + " (" + number + ")");
+            if(!PhoneManager.Dial(number)) {
+                send("Error can't dial.");
+            }
         }
     }
 
@@ -568,6 +606,7 @@ public class XmppService extends Service {
         }
     }
 
+    
     public void displayLastRecipient(String phoneNumber) {
         if (phoneNumber == null) {
             send("Reply contact is not set");
