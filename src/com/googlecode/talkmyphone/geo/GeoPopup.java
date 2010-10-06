@@ -14,44 +14,49 @@ public class GeoPopup extends Activity {
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        final String url = getIntent().getStringExtra("url");
-        final Activity popup = this;
-        
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Choose Geo App");
-        builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int item) {
-                dialog.cancel();
-                
-                String intentUrl = "";
-                if (items[item].compareTo("Maps") == 0) {
-                    intentUrl = "geo:" + url;
-                } else if (items[item].compareTo("Navigation") == 0) {
-                    intentUrl = "google.navigation:" + url;
-                } else if (items[item].compareTo("Street View") == 0) {
-                    intentUrl = "google.streetview:cbll=" + url;
+        try {
+            super.onCreate(savedInstanceState);
+            
+            final String url = getIntent().getStringExtra("url");
+            final Activity popup = this;
+            
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Choose Geo App");
+            builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int item) {
+                    dialog.cancel();
+                    
+                    String intentUrl = "";
+                    if (items[item].compareTo("Maps") == 0) {
+                        intentUrl = "geo:" + url;
+                    } else if (items[item].compareTo("Navigation") == 0) {
+                        intentUrl = "google.navigation:" + url;
+                    } else if (items[item].compareTo("Street View") == 0) {
+                        intentUrl = "google.streetview:cbll=" + url;
+                    }
+                    
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(intentUrl));
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                    }
+                    
+                    popup.finish();
                 }
-                
-                try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(intentUrl));
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                } catch (Exception e) {
+            });
+            builder.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                public void onCancel(DialogInterface dialog) {
+                    try {
+                        dialog.cancel();
+                        popup.finish();
+                    } catch (Exception e) {
+                    }
                 }
-                
-                popup.finish();
-            }
-        });
-        builder.setOnCancelListener(new DialogInterface.OnCancelListener() {
-            public void onCancel(DialogInterface dialog) {
-                dialog.cancel();
-                popup.finish();
-            }
-        });
-        builder.show();
-
+            });
+            builder.show();
+        } catch (Exception e) {
+        }
         
     }
 }

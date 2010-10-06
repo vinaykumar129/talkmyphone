@@ -453,7 +453,7 @@ public class XmppService extends Service {
                 builder.append("- \"reply:#message#\": send a sms to your last recipient with content message.\n");
                 builder.append("- \"sms:#contact#[:#message#]\": sends a sms to number with content message or display last sent sms.\n");
                 builder.append("- \"contact:#contact#\": display informations of a searched contact.\n");
-                //builder.append("- \"geo:#address#\": Open Maps or Navigation or Street view on specific address\n");
+                builder.append("- \"geo:#address#\": Open Maps or Navigation or Street view on specific address\n");
                 builder.append("- \"where\": sends you google map updates about the location of the phone until you send \"stop\"\n");
                 builder.append("- \"ring\": rings the phone until you send \"stop\"\n");
                 builder.append("- \"copy:#text#\": copy text to clipboard\n");
@@ -488,9 +488,9 @@ public class XmppService extends Service {
             else if (command.equals("copy")) {
                 copyToClipboard(args);
             }
-//            else if (command.equals("geo")) {
-//                geo(args);
-//            } 
+            else if (command.equals("geo")) {
+                geo(args);
+            } 
             else if (command.equals("dial")) {
                 dial(args);
             }
@@ -666,6 +666,8 @@ public class XmppService extends Service {
             }
         } else {
             send("No match for \"" + text + "\"");
+            // For emulation testing
+            // GeoManager.launchExternal("48.833199,2.362232");
         }
     }  
     
