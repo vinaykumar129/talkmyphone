@@ -422,7 +422,7 @@ public class XmppService extends Service {
 
 
     public void setLastRecipient(String phoneNumber) {
-        if (lastRecipient == null || phoneNumber.compareTo(lastRecipient) != 0) {
+        if (lastRecipient == null || !phoneNumber.equals(lastRecipient)) {
             lastRecipient = phoneNumber;
             displayLastRecipient(phoneNumber);
         }
@@ -569,14 +569,14 @@ public class XmppService extends Service {
     }
 
     public void displayLastRecipient(String phoneNumber) {
-        if (null == phoneNumber) {
-            send("SMS reply contact is not set");
+        if (phoneNumber == null) {
+            send("Reply contact is not set");
         } else {
             String contact = ContactsManager.getContactName(phoneNumber);
             if (ContactsManager.isCellPhoneNumber(phoneNumber) && contact.compareTo(phoneNumber) != 0){
                 contact += " (" + phoneNumber + ")";
             }
-            send("SMS reply contact is " + contact);
+            send("Reply contact is now " + contact);
         }
     }
 
