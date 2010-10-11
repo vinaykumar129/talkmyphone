@@ -63,6 +63,7 @@ public class XmppService extends Service {
     private XMPPConnection mConnection = null;
     private PacketListener mPacketListener = null;
     private boolean notifyApplicationConnection;
+    private boolean formatChatResponses;
 
     // ring
     private MediaPlayer mMediaPlayer = null;
@@ -234,6 +235,7 @@ public class XmppService extends Service {
         ringtone = prefs.getString("ringtone", Settings.System.DEFAULT_RINGTONE_URI.toString());
         displaySentSms = prefs.getBoolean("showSentSms", false);
         smsNumber = prefs.getInt("smsNumber", 5);
+        formatChatResponses = prefs.getBoolean("formatResponses", false);
     }
 
 
@@ -435,7 +437,21 @@ public class XmppService extends Service {
             displayLastRecipient(phoneNumber);
         }
     }
-
+    
+    public String makeBold(String in) {
+        if (formatChatResponses) {
+            return " *" + in + "* ";
+        }
+        return in;
+    }
+    
+    public String makeItalic(String in) {
+        if (formatChatResponses) {
+            return " _" + in + "_ ";
+        }
+        return in;
+    }
+    
     /** handles the different commands */
     private void onCommandReceived(String commandLine) {
         try {
@@ -608,13 +624,13 @@ public class XmppService extends Service {
                 if (smsList.size() > 0) {
                     hasMatch = true;
                     StringBuilder smsContact = new StringBuilder();
-                    smsContact.append("*" + contact.name + "*");
+                    smsContact.append(makeBold(contact.name));
                     for (Sms sms : smsList) {
-                        smsContact.append("\r\n _" + sms.date.toLocaleString() + " - " + sms.sender + "_");
-                        smsContact.append("\r\n " + sms.message);
+                        smsContact.append("\r\n" + makeItalic(sms.date.toLocaleString() + " - " + sms.sender));
+                        smsContact.append("\r\n" + sms.message);
                     }
                     if (smsList.size() < smsNumber) {
-                        smsContact.append("\r\nOnly got " + smsList.size() + " sms");
+                        smsContact.append("\r\n" + makeItalic("Only got " + smsList.size() + " sms"));
                     }
                     send(smsContact.toString() + "\r\n");
                 } else {
@@ -650,11 +666,11 @@ public class XmppService extends Service {
         if (contacts.size() > 0) {
             for (Contact contact : contacts) {
                 StringBuilder strContact = new StringBuilder();
-                strContact.append("*" + contact.name + "*");
+                strContact.append(makeBold(contact.name));
 
                 ArrayList<Phone> mobilePhones = ContactsManager.getPhones(contact.id);
                 if (mobilePhones.size() > 0) {
-                    strContact.append("\r\n _Phones_");
+                    strContact.append("\r\n" + makeItalic("Phones"));
                     for (Phone phone : mobilePhones) {
                         strContact.append("\r\n" + phone.label + " - " + phone.cleanNumber);
                     }
@@ -662,7 +678,7 @@ public class XmppService extends Service {
 
                 ArrayList<ContactAddress> emails = ContactsManager.getEmailAddresses(contact.id);
                 if (emails.size() > 0) {
-                    strContact.append("\r\n _Emails_");
+                    strContact.append("\r\n" + makeItalic("Emails"));
                     for (ContactAddress email : emails) {
                         strContact.append("\r\n" + email.label + " - " + email.address);
                     }
@@ -670,7 +686,7 @@ public class XmppService extends Service {
 
                 ArrayList<ContactAddress> addresses = ContactsManager.getPostalAddresses(contact.id);
                 if (addresses.size() > 0) {
-                    strContact.append("\r\n _Addresses_");
+                    strContact.append("\r\n" + makeItalic("Addresses"));
                     for (ContactAddress address : addresses) {
                         strContact.append("\r\n" + address.label + " - " + address.address);
                     }
