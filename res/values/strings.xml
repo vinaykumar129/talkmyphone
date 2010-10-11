@@ -23,4 +23,6 @@
     <string name="additionnal_settings">Additionnal settings</string>
 <string name="notified_address">Address to notify</string>
 <string name="use_different_account">Use a different account</string>
+<string name="show_sent_sms">Show sent SMS</string>
+<string name="sms_number">Number of SMS</string>
 </resources>
