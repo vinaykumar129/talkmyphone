@@ -1,6 +1,7 @@
 package com.googlecode.talkmyphone.contacts;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
@@ -14,9 +15,6 @@ import com.googlecode.talkmyphone.XmppService;
 
 public class ContactsManager {
 
-    // Contact searching
-    private final static String cellPhonePattern = "\\+*\\d+";
-    
     /**
      * Tries to get the contact display name of the specified phone number.
      * If not found, returns the argument.
@@ -46,7 +44,7 @@ public class ContactsManager {
      */
     public static ArrayList<Contact> getMatchingContacts(String searchedName) {
         ArrayList<Contact> res = new ArrayList<Contact>();
-        if (isCellPhoneNumber(searchedName)) {
+        if (Phone.isCellPhoneNumber(searchedName)) {
             searchedName = getContactName(searchedName);
         }
 
@@ -72,6 +70,7 @@ public class ContactsManager {
             }
             c.close();
         }
+        Collections.sort(res);
         return res;
     }
 
@@ -144,8 +143,8 @@ public class ContactsManager {
 
             Phone phone = new Phone();
             phone.number = number;
-            phone.cleanNumber = cleanPhoneNumber(phone.number);
-            phone.isCellPhoneNumber = isCellPhoneNumber(phone.number);
+            phone.cleanNumber = Phone.cleanPhoneNumber(phone.number);
+            phone.isCellPhoneNumber = Phone.isCellPhoneNumber(phone.number);
             phone.label = label;
             phone.type = type;
 
@@ -160,10 +159,10 @@ public class ContactsManager {
      */
     public static ArrayList<Phone> getPhones(String searchedText) {
         ArrayList<Phone> res = new ArrayList<Phone>();
-        if (isCellPhoneNumber(searchedText)) {
+        if (Phone.isCellPhoneNumber(searchedText)) {
             Phone phone = new Phone();
             phone.number = searchedText;
-            phone.cleanNumber = cleanPhoneNumber(phone.number);
+            phone.cleanNumber = Phone.cleanPhoneNumber(phone.number);
             phone.contactName = getContactName(searchedText);
             phone.isCellPhoneNumber = true;
             phone.type = Contacts.Phones.TYPE_MOBILE;
@@ -207,15 +206,5 @@ public class ContactsManager {
         }
 
         return res;
-    }
-
-    public static String cleanPhoneNumber(String number) {
-        return number.replace("(", "")
-                     .replace(")", "")
-                     .replace(" ", "");
-    }
-
-    public static boolean isCellPhoneNumber(String number) {
-        return cleanPhoneNumber(number).matches(cellPhonePattern);
     }
 }

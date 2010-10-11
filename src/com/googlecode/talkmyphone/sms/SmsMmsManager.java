@@ -16,6 +16,7 @@ import android.telephony.gsm.SmsManager;
 
 import com.googlecode.talkmyphone.Tools;
 import com.googlecode.talkmyphone.XmppService;
+import com.googlecode.talkmyphone.contacts.Phone;
 
 public class SmsMmsManager {
     // intents for sms sending
@@ -106,27 +107,80 @@ public class SmsMmsManager {
     /**
      * Returns a ArrayList of <Sms> with count sms where the contactId match the argument
      */
-    public static ArrayList<Sms> getSms(Long contactId, Integer count) {
+    public static ArrayList<Sms> getSms(Long contactId, String contactName) {
         ArrayList<Sms> res = new ArrayList<Sms>();
         
         if(null != contactId) {
             Uri mSmsQueryUri = Uri.parse("content://sms/inbox");
-            String columns[] = new String[] { "person", "body", "date", "status"};
+            String columns[] = new String[] { "person", "address", "body", "date", "status"};
             Cursor c = XmppService.getInstance().getContentResolver().query(mSmsQueryUri, columns, "person = " + contactId, null, null);
 
             if (c.getCount() > 0) {
-                Integer i = 0;
-                for (boolean hasData = c.moveToFirst() ; hasData && i++ < count ; hasData = c.moveToNext()) {
+                for (boolean hasData = c.moveToFirst() ; hasData ; hasData = c.moveToNext()) {
                     Date date = new Date();
                     date.setTime(Long.parseLong(Tools.getString(c ,"date")));
                     Sms sms = new Sms();
                     sms.date = date;
+                    sms.number = Tools.getString(c ,"address");
                     sms.message = Tools.getString(c ,"body");
+                    sms.sender = contactName;
                     res.add( sms );
                 }
             }
             c.close();
         }
+        return res;
+    }
+    
+    /**
+     * Returns a ArrayList of <Sms> with count sms where the contactId match the argument
+     */
+    public static ArrayList<Sms> getAllSentSms() {
+        ArrayList<Sms> res = new ArrayList<Sms>();
+        
+        Uri mSmsQueryUri = Uri.parse("content://sms/sent");
+        String columns[] = new String[] { "address", "body", "date", "status"};
+        Cursor c = XmppService.getInstance().getContentResolver().query(mSmsQueryUri, columns, null, null, null);
+
+        if (c.getCount() > 0) {
+            for (boolean hasData = c.moveToFirst() ; hasData ; hasData = c.moveToNext()) {
+                Date date = new Date();
+                date.setTime(Long.parseLong(Tools.getString(c ,"date")));
+                Sms sms = new Sms();
+                sms.date = date;
+                sms.number = Tools.getString(c ,"address");
+                sms.message = Tools.getString(c ,"body");
+                sms.sender = "Me";
+                res.add( sms );
+         
+            }
+        }
+        c.close();
+       
+        return res;
+    }
+
+    /**
+     * Returns a ArrayList of <Sms> with count sms where the contactId match the argument
+     */
+    public static ArrayList<Sms> getSentSms(ArrayList<Phone> phones, ArrayList<Sms> sms) {
+        ArrayList<Sms> res = new ArrayList<Sms>();
+        
+        for (Sms aSms : sms) {
+            Boolean phoneMatch = false;
+            
+            for (Phone phone : phones) {
+                if (phone.phoneMatch(aSms.number)) {
+                    phoneMatch = true;
+                    break;
+                }
+            }
+            
+            if (phoneMatch) {
+                res.add( aSms );
+            }
+        }
+          
         return res;
     }
 

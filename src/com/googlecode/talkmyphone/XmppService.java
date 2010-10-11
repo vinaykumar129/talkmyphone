@@ -3,6 +3,7 @@ package com.googlecode.talkmyphone;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.jivesoftware.smack.ConnectionConfiguration;
@@ -74,6 +75,10 @@ public class XmppService extends Service {
     // battery
     private BroadcastReceiver mBatInfoReceiver = null;
     private boolean notifyBattery;
+
+    // sms
+    private int smsNumber;
+    private boolean displaySentSms;
 
     // notification stuff
     @SuppressWarnings("unchecked")
@@ -227,6 +232,8 @@ public class XmppService extends Service {
         SmsMmsManager.notifySmsSent = prefs.getBoolean("notifySmsSent", true);
         SmsMmsManager.notifySmsDelivered = prefs.getBoolean("notifySmsDelivered", true);
         ringtone = prefs.getString("ringtone", Settings.System.DEFAULT_RINGTONE_URI.toString());
+        displaySentSms = prefs.getBoolean("showSentSms", false);
+        smsNumber = prefs.getInt("smsNumber", 5);
     }
 
 
@@ -470,10 +477,8 @@ public class XmppService extends Service {
                     message = args.substring(separatorPos + 1);
                     sendSMS(message, contact);
                 } else if (args.length() > 0) {
-                    // todo set number of SMS into parameters
-                    // display received SMS and sent SMS
                     contact = args;
-                    readSMS(contact, 5);
+                    readSMS(contact);
                 } else {
                     displayLastRecipient(lastRecipient);
                 }
@@ -529,7 +534,7 @@ public class XmppService extends Service {
         String number = null;
         String contact = null;
         
-        if (ContactsManager.isCellPhoneNumber(searchedText)) {
+        if (Phone.isCellPhoneNumber(searchedText)) {
             number = searchedText;
             contact = ContactsManager.getContactName(number);
         } else {
@@ -559,7 +564,7 @@ public class XmppService extends Service {
 
     /** sends a SMS to the specified contact */
     public void sendSMS(String message, String contact) {
-        if (ContactsManager.isCellPhoneNumber(contact)) {
+        if (Phone.isCellPhoneNumber(contact)) {
             send("Sending sms to " + ContactsManager.getContactName(contact));
             SmsMmsManager.sendSMSByPhoneNumber(message, contact);
         } else {
@@ -581,25 +586,43 @@ public class XmppService extends Service {
     }
 
     /** reads (count) SMS from all contacts matching pattern */
-    public void readSMS(String searchedText, Integer count) {
+    public void readSMS(String searchedText) {
 
         ArrayList<Contact> contacts = ContactsManager.getMatchingContacts(searchedText);
-
+        ArrayList<Sms> sentSms = new ArrayList<Sms>();
+        if(displaySentSms) {
+            sentSms = SmsMmsManager.getAllSentSms();
+        }
+        
         if (contacts.size() > 0) {
+            StringBuilder noSms = new StringBuilder();
+            Boolean hasMatch = false;
             for (Contact contact : contacts) {
-                ArrayList<Sms> smsList = SmsMmsManager.getSms(contact.id, count);
-
-                send(contact.name);
-                if (smsList.size() > 0) {
-                    for (Sms sms : smsList) {
-                        send(sms.date.toLocaleString() + " - " + sms.message);
-                    }
-                    if (smsList.size() < count) {
-                        send("Only got " + smsList.size() + " sms");
-                    }
-                } else {
-                    send("No sms found");
+                ArrayList<Sms> smsList = SmsMmsManager.getSms(contact.id, contact.name);
+                if(displaySentSms) {
+                    smsList.addAll(SmsMmsManager.getSentSms(ContactsManager.getPhones(contact.id),sentSms));
+                    Collections.sort(smsList);
                 }
+                
+                smsList.subList(Math.max(smsList.size() - smsNumber,0), smsList.size());
+                if (smsList.size() > 0) {
+                    hasMatch = true;
+                    StringBuilder smsContact = new StringBuilder();
+                    smsContact.append("*" + contact.name + "*");
+                    for (Sms sms : smsList) {
+                        smsContact.append("\r\n _" + sms.date.toLocaleString() + " - " + sms.sender + "_");
+                        smsContact.append("\r\n " + sms.message);
+                    }
+                    if (smsList.size() < smsNumber) {
+                        smsContact.append("\r\nOnly got " + smsList.size() + " sms");
+                    }
+                    send(smsContact.toString() + "\r\n");
+                } else {
+                    noSms.append(contact.name + " - No sms found\r\n");
+                }
+            }
+            if (!hasMatch) {
+                send(noSms.toString());
             }
         } else {
             send("No match for \"" + searchedText + "\"");
@@ -612,7 +635,7 @@ public class XmppService extends Service {
             send("Reply contact is not set");
         } else {
             String contact = ContactsManager.getContactName(phoneNumber);
-            if (ContactsManager.isCellPhoneNumber(phoneNumber) && contact.compareTo(phoneNumber) != 0){
+            if (Phone.isCellPhoneNumber(phoneNumber) && contact.compareTo(phoneNumber) != 0){
                 contact += " (" + phoneNumber + ")";
             }
             send("Reply contact is now " + contact);
@@ -626,22 +649,33 @@ public class XmppService extends Service {
 
         if (contacts.size() > 0) {
             for (Contact contact : contacts) {
-                send(contact.name);
+                StringBuilder strContact = new StringBuilder();
+                strContact.append("*" + contact.name + "*");
 
                 ArrayList<Phone> mobilePhones = ContactsManager.getPhones(contact.id);
-                for (Phone phone : mobilePhones) {
-                    send("\t" + phone.label + " - " + phone.cleanNumber);
+                if (mobilePhones.size() > 0) {
+                    strContact.append("\r\n _Phones_");
+                    for (Phone phone : mobilePhones) {
+                        strContact.append("\r\n" + phone.label + " - " + phone.cleanNumber);
+                    }
                 }
 
                 ArrayList<ContactAddress> emails = ContactsManager.getEmailAddresses(contact.id);
-                for (ContactAddress email : emails) {
-                    send("\t" + email.label + " - " + email.address);
+                if (emails.size() > 0) {
+                    strContact.append("\r\n _Emails_");
+                    for (ContactAddress email : emails) {
+                        strContact.append("\r\n" + email.label + " - " + email.address);
+                    }
                 }
 
                 ArrayList<ContactAddress> addresses = ContactsManager.getPostalAddresses(contact.id);
-                for (ContactAddress address : addresses) {
-                    send("\t" + address.label + " - " + address.address);
+                if (addresses.size() > 0) {
+                    strContact.append("\r\n _Addresses_");
+                    for (ContactAddress address : addresses) {
+                        strContact.append("\r\n" + address.label + " - " + address.address);
+                    }
                 }
+                send(strContact.toString() + "\r\n");
             }
         } else {
             send("No match for \"" + searchedText + "\"");
