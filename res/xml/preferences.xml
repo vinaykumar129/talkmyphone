@@ -55,6 +55,11 @@
             android:summary="Check if you want TalkMyPhone to start at boot"/>
         <CheckBoxPreference
             android:defaultValue="false"
+            android:key="formatResponses"
+            android:title="@string/format_responses"
+            android:summary="Check if you want to format responses with bold and italic, doesn't work with all Xmpp clients"/>
+        <CheckBoxPreference
+            android:defaultValue="false"
             android:key="showSentSms"
             android:title="@string/show_sent_sms"
             android:summary="Check if you want to see sent sms"/>
