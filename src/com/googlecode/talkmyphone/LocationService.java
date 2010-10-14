@@ -22,8 +22,10 @@ public class LocationService extends Service {
     private LocationManager mLocationManager = null;
     private LocationListener mLocationListener = null;
     private Location currentBestLocation = null;
-    
+
     private static final int TWO_MINUTES = 1000 * 60 * 2;
+    public static final String STOP_SERVICE = "STOP_SERVICE";
+    public static final String START_SERVICE = "START_SERVICE";
 
     @Override
     public IBinder onBind(Intent arg0) {
@@ -97,14 +99,21 @@ public class LocationService extends Service {
     }
 
     public void onStart(final Intent intent, int startId) {
-       super.onStart(intent, startId);
-       try {
+        super.onStart(intent, startId);
+
+        if ( intent.getAction().equals(STOP_SERVICE) ) {
+            destroy();
+            stopSelf();
+            return;
+        }
+
+        try {
             if(!getGPSStatus())
                 setGPSStatus(true);
-       }
-       catch(Exception e) {
-       }
-       mLocationListener = new LocationListener() {
+        }
+        catch(Exception e) {
+        }
+        mLocationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
                 if (isBetterLocation(location, currentBestLocation)) {
                     currentBestLocation = location;
@@ -138,13 +147,16 @@ public class LocationService extends Service {
     }
 
     public void onDestroy() {
+        destroy();
+    }
+
+    private void destroy() {
         if (mLocationManager != null && mLocationListener != null) {
             mLocationManager.removeUpdates(mLocationListener);
             mLocationManager = null;
             mLocationListener = null;
         }
     }
-
 
     /** From the SDK documentation. Determines whether one Location reading is better than the current Location fix
       * @param location  The new Location that you want to evaluate

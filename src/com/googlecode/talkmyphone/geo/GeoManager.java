@@ -12,17 +12,19 @@ import com.googlecode.talkmyphone.XmppService;
 
 
 public class GeoManager {
-    
+
     /** Starts the geolocation service */
     public static void startLocatingPhone() {
         Intent intent = new Intent(XmppService.getInstance(), LocationService.class);
+        intent.setAction(LocationService.START_SERVICE);
         XmppService.getInstance().startService(intent);
     }
 
     /** Stops the geolocation service */
     public static void stopLocatingPhone() {
         Intent intent = new Intent(XmppService.getInstance(), LocationService.class);
-        XmppService.getInstance().stopService(intent);
+        intent.setAction(LocationService.STOP_SERVICE);
+        XmppService.getInstance().startService(intent);
     }
 
     /** Return List of <Address> from searched location */
@@ -36,16 +38,16 @@ public class GeoManager {
         }
         catch(Exception ex) {
         }
-        
+
         return null;
     }
-    
+
     /** launches an activity on the url */
     public static void launchExternal(String url) {
         Intent popup = new Intent(XmppService.getInstance(), GeoPopup.class);
-        popup.putExtra("url", url);    
+        popup.putExtra("url", url);
         popup.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        
+
         XmppService.getInstance().startActivity(popup);
     }
 }
