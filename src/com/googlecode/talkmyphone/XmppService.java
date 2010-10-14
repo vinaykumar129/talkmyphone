@@ -437,21 +437,21 @@ public class XmppService extends Service {
             displayLastRecipient(phoneNumber);
         }
     }
-    
+
     public String makeBold(String in) {
         if (formatChatResponses) {
             return " *" + in + "* ";
         }
         return in;
     }
-    
+
     public String makeItalic(String in) {
         if (formatChatResponses) {
             return " _" + in + "_ ";
         }
         return in;
     }
-    
+
     /** handles the different commands */
     private void onCommandReceived(String commandLine) {
         try {
@@ -511,7 +511,7 @@ public class XmppService extends Service {
             }
             else if (command.equals("geo")) {
                 geo(args);
-            } 
+            }
             else if (command.equals("dial")) {
                 dial(args);
             }
@@ -544,12 +544,12 @@ public class XmppService extends Service {
             send("Error : " + ex);
         }
     }
-    
+
     /** dial the specified contact */
     public void dial(String searchedText) {
         String number = null;
         String contact = null;
-        
+
         if (Phone.isCellPhoneNumber(searchedText)) {
             number = searchedText;
             contact = ContactsManager.getContactName(number);
@@ -569,7 +569,7 @@ public class XmppService extends Service {
                 send("No match for \"" + searchedText + "\"");
             }
         }
-        
+
         if( number != null) {
             send("Dial " + contact + " (" + number + ")");
             if(!PhoneManager.Dial(number)) {
@@ -609,7 +609,7 @@ public class XmppService extends Service {
         if(displaySentSms) {
             sentSms = SmsMmsManager.getAllSentSms();
         }
-        
+
         if (contacts.size() > 0) {
             StringBuilder noSms = new StringBuilder();
             Boolean hasMatch = false;
@@ -619,7 +619,7 @@ public class XmppService extends Service {
                     smsList.addAll(SmsMmsManager.getSentSms(ContactsManager.getPhones(contact.id),sentSms));
                     Collections.sort(smsList);
                 }
-                
+
                 smsList.subList(Math.max(smsList.size() - smsNumber,0), smsList.size());
                 if (smsList.size() > 0) {
                     hasMatch = true;
@@ -645,7 +645,7 @@ public class XmppService extends Service {
         }
     }
 
-    
+
     public void displayLastRecipient(String phoneNumber) {
         if (phoneNumber == null) {
             send("Reply contact is not set");
@@ -719,8 +719,8 @@ public class XmppService extends Service {
             // For emulation testing
             // GeoManager.launchExternal("48.833199,2.362232");
         }
-    }  
-    
+    }
+
     /** copy text to clipboard */
     private void copyToClipboard(String text) {
         try {

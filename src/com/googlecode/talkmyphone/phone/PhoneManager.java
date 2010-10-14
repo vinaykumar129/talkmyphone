@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.net.Uri;
 
 public class PhoneManager {
-    
+
     /** Dial a phone number */
     public static Boolean Dial(String number) {
         try {

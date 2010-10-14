@@ -26,7 +26,7 @@ public class SmsMmsManager {
     public static BroadcastReceiver deliveredSmsReceiver = null;
     public static boolean notifySmsSent;
     public static boolean notifySmsDelivered;
-    
+
     /** clear the sms monitoring related stuff */
     public static void clearSmsMonitors() {
         if (sentSmsReceiver != null) {
@@ -109,7 +109,7 @@ public class SmsMmsManager {
      */
     public static ArrayList<Sms> getSms(Long contactId, String contactName) {
         ArrayList<Sms> res = new ArrayList<Sms>();
-        
+
         if(null != contactId) {
             Uri mSmsQueryUri = Uri.parse("content://sms/inbox");
             String columns[] = new String[] { "person", "address", "body", "date", "status"};
@@ -131,13 +131,13 @@ public class SmsMmsManager {
         }
         return res;
     }
-    
+
     /**
      * Returns a ArrayList of <Sms> with count sms where the contactId match the argument
      */
     public static ArrayList<Sms> getAllSentSms() {
         ArrayList<Sms> res = new ArrayList<Sms>();
-        
+
         Uri mSmsQueryUri = Uri.parse("content://sms/sent");
         String columns[] = new String[] { "address", "body", "date", "status"};
         Cursor c = XmppService.getInstance().getContentResolver().query(mSmsQueryUri, columns, null, null, null);
@@ -152,11 +152,11 @@ public class SmsMmsManager {
                 sms.message = Tools.getString(c ,"body");
                 sms.sender = "Me";
                 res.add( sms );
-         
+
             }
         }
         c.close();
-       
+
         return res;
     }
 
@@ -165,22 +165,22 @@ public class SmsMmsManager {
      */
     public static ArrayList<Sms> getSentSms(ArrayList<Phone> phones, ArrayList<Sms> sms) {
         ArrayList<Sms> res = new ArrayList<Sms>();
-        
+
         for (Sms aSms : sms) {
             Boolean phoneMatch = false;
-            
+
             for (Phone phone : phones) {
                 if (phone.phoneMatch(aSms.number)) {
                     phoneMatch = true;
                     break;
                 }
             }
-            
+
             if (phoneMatch) {
                 res.add( aSms );
             }
         }
-          
+
         return res;
     }
 
