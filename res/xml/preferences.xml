@@ -29,7 +29,7 @@
             android:title="@string/password"
             android:summary="Enter your gmail password or the password used by the phone to connect"/>
         <PreferenceScreen
-            android:title="@string/additionnal_settings">
+            android:title="@string/additional_settings">
             <EditTextPreference
                 android:title="@string/server_host"
                 android:key="serverHost"
@@ -47,7 +47,7 @@
         </PreferenceScreen>
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/additionnal_settings" android:key="AdditionnalSettings">
+    <PreferenceCategory android:title="@string/additional_settings" android:key="AdditionnalSettings">
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="startAtBoot"
