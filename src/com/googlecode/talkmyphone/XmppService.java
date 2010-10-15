@@ -19,20 +19,14 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.location.Address;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
-import android.provider.Settings;
 import android.text.ClipboardManager;
 import android.util.Log;
 import android.widget.Toast;
@@ -47,6 +41,7 @@ import com.googlecode.talkmyphone.sms.Sms;
 import com.googlecode.talkmyphone.sms.SmsMmsManager;
 
 public class XmppService extends Service {
+    private BroadcastsAndCommandsHandler mBroadcastsAndCommandsHandler;
 
     private static final int DISCONNECTED = 0;
     private static final int CONNECTING = 1;
@@ -68,17 +63,8 @@ public class XmppService extends Service {
     private boolean notifyApplicationConnection;
     private boolean formatChatResponses;
 
-    // ring
-    private MediaPlayer mMediaPlayer = null;
-    private String ringtone = null;
-    private boolean canRing;
-
     // last person who sent sms/who we sent an sms to
     private String lastRecipient = null;
-
-    // battery
-    private BroadcastReceiver mBatInfoReceiver = null;
-    private boolean notifyBattery;
 
     // sms
     private int smsNumber;
@@ -238,10 +224,8 @@ public class XmppService extends Service {
             mLogin = mTo;
         }
         notifyApplicationConnection = prefs.getBoolean("notifyApplicationConnection", true);
-        notifyBattery = prefs.getBoolean("notifyBattery", true);
         SmsMmsManager.notifySmsSent = prefs.getBoolean("notifySmsSent", true);
         SmsMmsManager.notifySmsDelivered = prefs.getBoolean("notifySmsDelivered", true);
-        ringtone = prefs.getString("ringtone", Settings.System.DEFAULT_RINGTONE_URI.toString());
         displaySentSms = prefs.getBoolean("showSentSms", false);
         smsNumber = prefs.getInt("smsNumber", 5);
         formatChatResponses = prefs.getBoolean("formatResponses", false);
@@ -252,7 +236,7 @@ public class XmppService extends Service {
     public void clearConnection() {
         if (mReconnectRunnable != null)
             mReconnectHandler.removeCallbacks(mReconnectRunnable);
-        
+
         if (mConnection != null) {
             if (mPacketListener != null) {
                 mConnection.removePacketListener(mPacketListener);
@@ -346,6 +330,9 @@ public class XmppService extends Service {
                 ) {
                     if (message.getBody() != null) {
                         onCommandReceived(message.getBody());
+                        Intent intent = new Intent("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED");
+                        intent.putExtra("command", message.getBody());
+                        sendBroadcast(intent);
                     }
                 }
             }
@@ -365,66 +352,13 @@ public class XmppService extends Service {
                 && mConnection.isAuthenticated());
     }
 
-    /** clear the battery monitor*/
-    private void clearBatteryMonitor() {
-        if (mBatInfoReceiver != null) {
-            unregisterReceiver(mBatInfoReceiver);
-        }
-        mBatInfoReceiver = null;
-    }
-
-    /** init the battery stuff */
-    private void initBatteryMonitor() {
-        if (notifyBattery) {
-            mBatInfoReceiver = new BroadcastReceiver(){
-                private int lastPercentageNotified = -1;
-                @Override
-                public void onReceive(Context arg0, Intent intent) {
-                    int level = intent.getIntExtra("level", 0);
-                    if (lastPercentageNotified == -1) {
-                        notifyAndSavePercentage(level);
-                    } else {
-                        if (level != lastPercentageNotified && level % 5 == 0) {
-                            notifyAndSavePercentage(level);
-                        }
-                    }
-                }
-                private void notifyAndSavePercentage(int level) {
-                    send("Battery level " + level + "%");
-                    lastPercentageNotified = level;
-                }
-            };
-            registerReceiver(mBatInfoReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        }
-    }
-
-    /** clears the media player */
-    private void clearMediaPlayer() {
-        if (mMediaPlayer != null) {
-            mMediaPlayer.stop();
-        }
-        mMediaPlayer = null;
-    }
-
-    /** init the media player */
-    private void initMediaPlayer() {
-        canRing = true;
-        Uri alert = Uri.parse(ringtone);
-        mMediaPlayer = new MediaPlayer();
-        try {
-            mMediaPlayer.setDataSource(this, alert);
-        } catch (Exception e) {
-            canRing = false;
-        }
-        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
-        mMediaPlayer.setLooping(true);
-    }
-
     private void _onStart() {
         // Get configuration
         if (instance == null)
         {
             instance = this;
+
+            mBroadcastsAndCommandsHandler = new BroadcastsAndCommandsHandler(getApplicationContext());
 
             initNotificationStuff();
 
@@ -433,15 +367,11 @@ public class XmppService extends Service {
             // first, clean everything
             clearConnection();
             SmsMmsManager.clearSmsMonitors();
-            clearMediaPlayer();
-            clearBatteryMonitor();
 
             // then, re-import preferences
             importPreferences();
 
-            initBatteryMonitor();
             SmsMmsManager.initSmsMonitors();
-            initMediaPlayer();
 
             mCurrentRetryCount = 0;
             mReconnectRunnable = new Runnable() {
@@ -474,8 +404,6 @@ public class XmppService extends Service {
         GeoManager.stopLocatingPhone();
 
         SmsMmsManager.clearSmsMonitors();
-        clearMediaPlayer();
-        clearBatteryMonitor();
         clearConnection();
 
         stopForegroundCompat(mStatus);
@@ -532,22 +460,7 @@ public class XmppService extends Service {
             // Not case sensitive commands
             command = command.toLowerCase();
 
-            if (command.equals("?")) {
-                StringBuilder builder = new StringBuilder();
-                builder.append("Available commands:\n");
-                builder.append("- \"?\": shows this help.\n");
-                builder.append("- \"dial:#contact#\": dial the specified contact.\n");
-                builder.append("- \"reply:#message#\": send a sms to your last recipient with content message.\n");
-                builder.append("- \"sms:#contact#[:#message#]\": sends a sms to number with content message or display last sent sms.\n");
-                builder.append("- \"contact:#contact#\": display informations of a searched contact.\n");
-                builder.append("- \"geo:#address#\": Open Maps or Navigation or Street view on specific address\n");
-                builder.append("- \"where\": sends you google map updates about the location of the phone until you send \"stop\"\n");
-                builder.append("- \"ring\": rings the phone until you send \"stop\"\n");
-                builder.append("- \"copy:#text#\": copy text to clipboard\n");
-                builder.append("and you can paste links and open it with the appropriate app\n");
-                send(builder.toString());
-            }
-            else if (command.equals("sms")) {
+            if (command.equals("sms")) {
                 int separatorPos = args.indexOf(":");
                 String contact = null;
                 String message = null;
@@ -589,11 +502,6 @@ public class XmppService extends Service {
             else if (command.equals("stop")) {
                 send("Stopping ongoing actions");
                 GeoManager.stopLocatingPhone();
-                stopRinging();
-            }
-            else if (command.equals("ring")) {
-                send("Ringing phone");
-                ring();
             }
             else if (command.equals("http")) {
                 open("http:" + args);
@@ -805,24 +713,5 @@ public class XmppService extends Service {
         startActivity(intent);
     }
 
-    /** makes the phone ring */
-    private void ring() {
-        final AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        if (canRing && audioManager.getStreamVolume(AudioManager.STREAM_ALARM) != 0) {
-            try {
-                mMediaPlayer.prepare();
-            } catch (Exception e) {
-                canRing = false;
-                send("Unable to ring, change the ringtone in the options");
-            }
-            mMediaPlayer.start();
-        }
-    }
 
-    /** Stops the phone from ringing */
-    private void stopRinging() {
-        if (canRing) {
-            mMediaPlayer.stop();
-        }
-    }
 }
