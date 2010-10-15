@@ -27,7 +27,10 @@ import android.content.SharedPreferences;
 import android.location.Address;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.text.ClipboardManager;
@@ -95,6 +98,12 @@ public class XmppService extends Service {
     private Object[] mStopForegroundArgs = new Object[1];
     private PendingIntent contentIntent = null;
 
+    // Our current retry attempt, plus a runnable and handler to implement retry
+    private int mCurrentRetryCount = 0;
+    Runnable mReconnectRunnable = null;
+    Handler mReconnectHandler = new Handler();
+
+    public final static String LOG_TAG = "talkmyphone";
     /** Updates the status about the service state (and the statusbar)*/
     private void updateStatus(int status) {
         if (status != mStatus) {
@@ -241,6 +250,9 @@ public class XmppService extends Service {
 
     /** clears the XMPP connection */
     public void clearConnection() {
+        if (mReconnectRunnable != null)
+            mReconnectHandler.removeCallbacks(mReconnectRunnable);
+        
         if (mConnection != null) {
             if (mPacketListener != null) {
                 mConnection.removePacketListener(mPacketListener);
@@ -256,27 +268,74 @@ public class XmppService extends Service {
         updateStatus(DISCONNECTED);
     }
 
+    private void maybeStartReconnect() {
+        if (mCurrentRetryCount > 5) {
+            // we failed after all the retries - just die.
+            Log.v(LOG_TAG, "maybeStartReconnect ran out of retrys");
+            updateStatus(DISCONNECTED);
+            Toast.makeText(this, "Failed to connect.", Toast.LENGTH_SHORT).show();
+            onDestroy();
+            return;
+        } else {
+            mCurrentRetryCount += 1;
+            // a simple linear-backoff strategy.
+            int timeout = 5000 * mCurrentRetryCount;
+            Log.e(LOG_TAG, "maybeStartReconnect scheduling retry in " + timeout);
+            mReconnectHandler.postDelayed(mReconnectRunnable, timeout);
+        }
+    }
+
     /** init the XMPP connection */
     public void initConnection() {
         updateStatus(CONNECTING);
+        NetworkInfo active = ((ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+        if (active==null || !active.isAvailable()) {
+            Log.e(LOG_TAG, "connection request, but no network available");
+            Toast.makeText(this, "Waiting for network to become available.", Toast.LENGTH_SHORT).show();
+            // we don't destroy the service here - our network receiver will notify us when
+            // the network comes up and we try again then.
+            updateStatus(DISCONNECTED);
+            return;
+        }
         if (mConnectionConfiguration == null) {
             importPreferences();
         }
-        mConnection = new XMPPConnection(mConnectionConfiguration);
+        XMPPConnection connection = new XMPPConnection(mConnectionConfiguration);
         try {
-            mConnection.connect();
+            connection.connect();
         } catch (XMPPException e) {
+            Log.e(LOG_TAG, "xmpp connection failed: " + e);
             Toast.makeText(this, "Connection failed.", Toast.LENGTH_SHORT).show();
-            updateStatus(DISCONNECTED);
+            maybeStartReconnect();
             return;
         }
         try {
-            mConnection.login(mLogin, mPassword);
+            connection.login(mLogin, mPassword);
         } catch (XMPPException e) {
-            Toast.makeText(this, "Login failed", Toast.LENGTH_SHORT).show();
-            updateStatus(DISCONNECTED);
+            connection.disconnect();
+            Log.e(LOG_TAG, "xmpp login failed: " + e);
+            // sadly, smack throws the same generic XMPPException for network
+            // related messages (eg "no response from the server") as for
+            // authoritative login errors (ie, bad password).  The only
+            // differentiator is the message itself which starts with this
+            // hard-coded string.
+            if (e.getMessage().indexOf("SASL authentication")==-1) {
+                // doesn't look like a bad username/password, so retry
+                Toast.makeText(this, "Login failed", Toast.LENGTH_SHORT).show();
+                maybeStartReconnect();
+            } else {
+                Toast.makeText(this, "Invalid username or password", Toast.LENGTH_SHORT).show();
+                onDestroy();
+            }
             return;
         }
+        mConnection = connection;
+        onConnectionComplete();
+    }
+
+    private void onConnectionComplete() {
+        Log.v(LOG_TAG, "connection established");
+        mCurrentRetryCount = 0;
         PacketFilter filter = new MessageTypeFilter(Message.Type.chat);
         mPacketListener = new PacketListener() {
             public void processPacket(Packet packet) {
@@ -383,11 +442,16 @@ public class XmppService extends Service {
             initBatteryMonitor();
             SmsMmsManager.initSmsMonitors();
             initMediaPlayer();
-            initConnection();
 
-            if (!isConnected()) {
-                onDestroy();
-            }
+            mCurrentRetryCount = 0;
+            mReconnectRunnable = new Runnable() {
+                public void run() {
+                    Log.v(LOG_TAG, "attempting reconnection");
+                    Toast.makeText(XmppService.this, "Reconnecting", Toast.LENGTH_SHORT).show();
+                    initConnection();
+                }
+            };
+            initConnection();
         }
     }
 
