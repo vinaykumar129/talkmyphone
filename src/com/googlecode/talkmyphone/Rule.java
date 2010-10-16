@@ -42,7 +42,8 @@ public class Rule {
             mBroadcastReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    if (mCondition.isTrue(context, intent)){
+                    intent.putExtra("ResultCode", getResultCode());
+                    if (mCondition == null || mCondition.isTrue(context, intent)){
                         mAction.execute(context, intent);
                     }
                 }
