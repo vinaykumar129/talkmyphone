@@ -3,11 +3,14 @@ package com.googlecode.talkmyphone;
 import java.util.ArrayList;
 
 import com.googlecode.talkmyphone.actions.Action;
+import com.googlecode.talkmyphone.actions.CopyToClipBoardAction;
 import com.googlecode.talkmyphone.actions.NotifyBatteryStateAction;
+import com.googlecode.talkmyphone.actions.NotifyMatchingContactsAction;
+import com.googlecode.talkmyphone.actions.NotifySmsDeliveredAction;
+import com.googlecode.talkmyphone.actions.NotifySmsSentAction;
 import com.googlecode.talkmyphone.actions.RingAction;
 import com.googlecode.talkmyphone.actions.SendHelpAction;
 import com.googlecode.talkmyphone.actions.StopRingingAction;
-import com.googlecode.talkmyphone.conditions.AlwaysTrueCondition;
 import com.googlecode.talkmyphone.conditions.Condition;
 import com.googlecode.talkmyphone.conditions.ConditionCommandIs;
 import android.content.Context;
@@ -45,7 +48,7 @@ public class BroadcastsAndCommandsHandler {
         mContext = context;
 
         addRule(new IntentFilter(Intent.ACTION_BATTERY_CHANGED),
-                new AlwaysTrueCondition (),
+                null,
                 new NotifyBatteryStateAction(),
                 "notifyBattery");
 
@@ -63,6 +66,26 @@ public class BroadcastsAndCommandsHandler {
                 new ConditionCommandIs("stop"),
                 new StopRingingAction(),
                 null);
+
+        addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
+                new ConditionCommandIs("copy"),
+                new CopyToClipBoardAction(),
+                null);
+
+        addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
+                new ConditionCommandIs("contact"),
+                new NotifyMatchingContactsAction(),
+                null);
+
+        addRule(new IntentFilter("SMS_SENT"),
+                null,
+                new NotifySmsSentAction(),
+                "notifySmsSent");
+
+        addRule(new IntentFilter("SMS_DELIVERED"),
+                null,
+                new NotifySmsDeliveredAction(),
+                "notifySmsDelivered");
 
         updateRulesFromSettings();
 
