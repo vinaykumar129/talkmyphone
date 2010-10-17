@@ -1,6 +1,5 @@
 package com.googlecode.talkmyphone.conditions;
 
-import android.content.Context;
 import android.content.Intent;
 
 public class ConditionCommandIs extends Condition {
@@ -12,7 +11,7 @@ public class ConditionCommandIs extends Condition {
     }
 
     @Override
-    public boolean isTrue(Context context, Intent intent) {
+    public boolean isTrue(Intent intent) {
         return command.equals(intent.getStringExtra("command"));
     }
 

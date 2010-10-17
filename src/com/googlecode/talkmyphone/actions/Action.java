@@ -1,10 +1,23 @@
 package com.googlecode.talkmyphone.actions;
 
-import android.content.Context;
 import android.content.Intent;
 
 public abstract class Action {
 
-    public abstract void execute(Context context, Intent intent);
+    private String result;
+
+    public abstract void execute(Intent intent);
+
+    public String getResult() {
+        return result;
+    }
+
+    public void appendResult(String res) {
+        if (result == null) {
+            result = res;
+        } else {
+            result += res;
+        }
+    }
 
 }

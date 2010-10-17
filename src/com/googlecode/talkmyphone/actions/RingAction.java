@@ -1,6 +1,5 @@
 package com.googlecode.talkmyphone.actions;
 
-import com.googlecode.talkmyphone.XmppService;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,12 +12,18 @@ public class RingAction extends Action {
 
     private static MediaPlayer mMediaPlayer;
 
+    private Context mContext;
+
+    public RingAction(Context context) {
+        mContext = context;
+    }
+
     /** Retrieves the ringtone from the options
      * @param context Context to get the preferences from
      */
-    private String getRingtoneFromPreferences(Context context) {
+    private String getRingtoneFromPreferences() {
         String res = "";
-        SharedPreferences prefs = context.getSharedPreferences("TalkMyPhone", 0);
+        SharedPreferences prefs = mContext.getSharedPreferences("TalkMyPhone", 0);
         String ringtone = prefs.getString("ringtone", "");
         if (ringtone.equals("")) {
             ringtone = Settings.System.DEFAULT_RINGTONE_URI.toString();
@@ -31,13 +36,13 @@ public class RingAction extends Action {
      * @param context context to build the player in
      * @param ringtone ringtone to set in the player
      */
-    private void buildNewPlayer(Context context, String ringtone) {
+    private void buildNewPlayer(String ringtone) {
         Uri ringtoneUri = Uri.parse(ringtone);
         mMediaPlayer = new MediaPlayer();
         try {
-            mMediaPlayer.setDataSource(context, ringtoneUri);
+            mMediaPlayer.setDataSource(mContext, ringtoneUri);
         } catch (Exception e) {
-            XmppService.getInstance().send(e.toString());
+            appendResult(e.toString());
         }
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
         mMediaPlayer.setLooping(true);
@@ -53,31 +58,31 @@ public class RingAction extends Action {
         mMediaPlayer = null;
     }
 
-    private void play(Context context) {
-        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+    private void play() {
+        AudioManager audioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
         if (audioManager.getStreamVolume(AudioManager.STREAM_ALARM) != 0) {
             try {
                 mMediaPlayer.prepare();
             } catch (Exception e) {
-                XmppService.getInstance().send(e.toString());
+                appendResult(e.toString());
             }
             mMediaPlayer.start();
         }
     }
 
     @Override
-    public void execute(Context context, Intent intent) {
+    public void execute(Intent intent) {
         // first, destroy previous player
         destroyPreviousPlayer();
 
         // Get the ringtone
-        String ringtone = getRingtoneFromPreferences(context);
+        String ringtone = getRingtoneFromPreferences();
         if (ringtone.equals("")) {
-            XmppService.getInstance().send("Unable to ring, change the ringtone in the options");
+            appendResult("Unable to ring, change the ringtone in the options");
         } else {
-            XmppService.getInstance().send("Ringing phone");
-            buildNewPlayer(context, ringtone);
-            play(context);
+            appendResult("Ringing phone");
+            buildNewPlayer(ringtone);
+            play();
         }
     }
 }

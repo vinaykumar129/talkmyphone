@@ -2,10 +2,12 @@ package com.googlecode.talkmyphone.geo;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.widget.Toast;
 
 public class GeoPopup extends Activity {
 
@@ -38,8 +40,10 @@ public class GeoPopup extends Activity {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(intentUrl));
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
                         startActivity(intent);
-                    } catch (Exception e) {
+                    } catch (ActivityNotFoundException e) {
+                        Toast.makeText(GeoPopup.this, "Activity not found", Toast.LENGTH_SHORT).show();
                     }
 
                     popup.finish();

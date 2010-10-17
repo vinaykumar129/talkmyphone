@@ -92,10 +92,10 @@ public class LocationService extends Service {
         builder.append("altitude: " + location.getAltitude() + " ");
         builder.append("speed: " + location.getSpeed() + "m/s ");
         builder.append("provider: " + location.getProvider() + ")");
-        XmppService service = XmppService.getInstance();
-        if (service != null) {
-            service.send(builder.toString());
-        }
+
+        Intent i = new Intent("ACTION_TALKMYPHONE_MESSAGE_TO_TRANSMIT");
+        i.putExtra("message", builder.toString());
+        getApplicationContext().sendBroadcast(i);
     }
 
     public void onStart(final Intent intent, int startId) {
@@ -136,10 +136,9 @@ public class LocationService extends Service {
             if (location != null) {
                 if (isBetterLocation(location, currentBestLocation)) {
                     currentBestLocation = location;
-                    XmppService service = XmppService.getInstance();
-                    if (service != null) {
-                        service.send("Last known location");
-                    }
+                    Intent i = new Intent("ACTION_TALKMYPHONE_MESSAGE_TO_TRANSMIT");
+                    i.putExtra("message", "Last known Location");
+                    getApplicationContext().sendBroadcast(i);
                     sendLocationUpdate(currentBestLocation);
                 }
             }

@@ -13,8 +13,14 @@ import android.content.Intent;
 
 public class NotifyMatchingContactsAction extends Action {
 
+    private Context mContext;
+
+    public NotifyMatchingContactsAction (Context context) {
+        mContext = context;
+    }
+
     @Override
-    public void execute(Context context, Intent intent) {
+    public void execute(Intent intent) {
 
         String searchedText = intent.getStringExtra("args");
 
@@ -48,10 +54,14 @@ public class NotifyMatchingContactsAction extends Action {
                         strContact.append("\r\n" + address.label + " - " + address.address);
                     }
                 }
-                XmppService.getInstance().send(strContact.toString() + "\r\n");
+                Intent i = new Intent("ACTION_TALKMYPHONE_MESSAGE_TO_TRANSMIT");
+                i.putExtra("message", strContact.toString() + "\r\n");
+                mContext.sendBroadcast(i);
             }
         } else {
-            XmppService.getInstance().send("No match for \"" + searchedText + "\"");
+            Intent i = new Intent("ACTION_TALKMYPHONE_MESSAGE_TO_TRANSMIT");
+            i.putExtra("message", "No match for \"" + searchedText + "\"");
+            mContext.sendBroadcast(i);
         }
     }
 
