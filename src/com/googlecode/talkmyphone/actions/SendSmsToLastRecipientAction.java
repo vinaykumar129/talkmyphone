@@ -6,17 +6,25 @@ import com.googlecode.talkmyphone.contacts.ContactsManager;
 import com.googlecode.talkmyphone.contacts.Phone;
 import com.googlecode.talkmyphone.sms.SmsMmsManager;
 
+import android.content.Context;
 import android.content.Intent;
 
 public class SendSmsToLastRecipientAction extends Action {
 
+    private Context mContext;
+
+    public SendSmsToLastRecipientAction(Context context) {
+        mContext = context;
+    }
+
     /** sends a SMS to the specified contact */
     private void sendSMS(String message, String contact) {
+        ContactsManager contactsManager = new ContactsManager(mContext);
         if (Phone.isCellPhoneNumber(contact)) {
-            appendResult("Sending sms to " + ContactsManager.getContactName(contact));
+            appendResult("Sending sms to " + contactsManager.getContactName(contact));
             SmsMmsManager.sendSMSByPhoneNumber(message, contact);
         } else {
-            ArrayList<Phone> mobilePhones = ContactsManager.getMobilePhones(contact);
+            ArrayList<Phone> mobilePhones = contactsManager.getMobilePhones(contact);
             if (mobilePhones.size() > 1) {
                 appendResult("Specify more details:");
 

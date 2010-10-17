@@ -5,25 +5,31 @@ import java.util.Collections;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.Contacts;
 import android.provider.Contacts.People;
 
 import com.googlecode.talkmyphone.Tools;
-import com.googlecode.talkmyphone.XmppService;
 
 public class ContactsManager {
+
+    private Context mContext;
+
+    public ContactsManager(Context context) {
+        mContext = context;
+    }
 
     /**
      * Tries to get the contact display name of the specified phone number.
      * If not found, returns the argument.
      */
-    public static String getContactName (String phoneNumber) {
+    public String getContactName (String phoneNumber) {
         String res;
         if (phoneNumber != null) {
             res = phoneNumber;
-            ContentResolver resolver = XmppService.getInstance().getContentResolver();
+            ContentResolver resolver = mContext.getContentResolver();
             String[] projection = new String[] {
                     Contacts.Phones.DISPLAY_NAME,
                     Contacts.Phones.NUMBER };
@@ -42,14 +48,14 @@ public class ContactsManager {
     /**
      * Returns a ArrayList of <Contact> where the names/company match the argument
      */
-    public static ArrayList<Contact> getMatchingContacts(String searchedName) {
+    public ArrayList<Contact> getMatchingContacts(String searchedName) {
         ArrayList<Contact> res = new ArrayList<Contact>();
         if (Phone.isCellPhoneNumber(searchedName)) {
             searchedName = getContactName(searchedName);
         }
 
         if (!searchedName.equals("")) {
-            ContentResolver resolver = XmppService.getInstance().getContentResolver();
+            ContentResolver resolver = mContext.getContentResolver();
             String[] projection = new String[] {
                     Contacts.People._ID,
                     Contacts.People.NAME
@@ -77,28 +83,27 @@ public class ContactsManager {
     /**
      * Returns a ArrayList of <ContactAddress> containing postal addresses which match to contact id
      */
-    public static ArrayList<ContactAddress> getPostalAddresses(Long contactId) {
+    public ArrayList<ContactAddress> getPostalAddresses(Long contactId) {
         return getAddresses(contactId, Contacts.KIND_POSTAL);
     }
 
     /**
      * Returns a ArrayList of <ContactAddress> containing email addresses which match to contact id
      */
-    public static ArrayList<ContactAddress> getEmailAddresses(Long contactId) {
+    public ArrayList<ContactAddress> getEmailAddresses(Long contactId) {
         return getAddresses(contactId, Contacts.KIND_EMAIL);
     }
 
     /**
      * Returns a ArrayList of <ContactAddress> which match to contact id
      */
-    public static ArrayList<ContactAddress> getAddresses(Long contactId, int kind) {
+    public ArrayList<ContactAddress> getAddresses(Long contactId, int kind) {
         ArrayList<ContactAddress> res = new ArrayList<ContactAddress>();
-        XmppService xmpp = XmppService.getInstance();
         if(null != contactId) {
 
             String addrWhere = Contacts.ContactMethods.PERSON_ID + " = " + contactId + " and " +
                                Contacts.ContactMethodsColumns.KIND + " = " + kind;
-            Cursor c = xmpp.getContentResolver().query(Contacts.ContactMethods.CONTENT_URI,
+            Cursor c = mContext.getContentResolver().query(Contacts.ContactMethods.CONTENT_URI,
                         null, addrWhere, null, null);
             while(c.moveToNext()) {
 
@@ -106,7 +111,7 @@ public class ContactsManager {
                 int type = Tools.getLong(c,Contacts.ContactMethodsColumns.TYPE).intValue();
 
                 if (label == null || label.compareTo("") != 0) {
-                    label = Contacts.ContactMethods.getDisplayLabel(xmpp.getBaseContext(), kind, type, "").toString();
+                    label = Contacts.ContactMethods.getDisplayLabel(mContext, kind, type, "").toString();
                 }
 
                 ContactAddress a = new ContactAddress();
@@ -123,13 +128,13 @@ public class ContactsManager {
      * Returns a ArrayList < Phone > of a specific contact
      * ! phone.contactName not set
      */
-    public static ArrayList<Phone> getPhones(Long contactId) {
+    public ArrayList<Phone> getPhones(Long contactId) {
         ArrayList<Phone> res = new ArrayList<Phone>();
 
         Uri personUri = ContentUris.withAppendedId(People.CONTENT_URI, contactId);
         Uri phonesUri = Uri.withAppendedPath(personUri, People.Phones.CONTENT_DIRECTORY);
         String[] proj = new String[] {Contacts.Phones.NUMBER, Contacts.Phones.LABEL, Contacts.Phones.TYPE};
-        Cursor c = XmppService.getInstance().getContentResolver().query(phonesUri, proj, null, null, null);
+        Cursor c = mContext.getContentResolver().query(phonesUri, proj, null, null, null);
 
         for (boolean hasData = c.moveToFirst() ; hasData ; hasData = c.moveToNext()) {
             String number = Tools.getString(c,Contacts.Phones.NUMBER);
@@ -138,7 +143,7 @@ public class ContactsManager {
             int type = Tools.getLong(c,Contacts.Phones.TYPE).intValue();
 
             if (label == null || label.compareTo("") != 0) {
-                label = Contacts.Phones.getDisplayLabel(XmppService.getInstance().getBaseContext(), type, "").toString();
+                label = Contacts.Phones.getDisplayLabel(mContext, type, "").toString();
             }
 
             Phone phone = new Phone();
@@ -157,7 +162,7 @@ public class ContactsManager {
      * Returns a ArrayList < Phone >
      * with all matching phones for the argument
      */
-    public static ArrayList<Phone> getPhones(String searchedText) {
+    public ArrayList<Phone> getPhones(String searchedText) {
         ArrayList<Phone> res = new ArrayList<Phone>();
         if (Phone.isCellPhoneNumber(searchedText)) {
             Phone phone = new Phone();
@@ -188,7 +193,7 @@ public class ContactsManager {
      * Returns a ArrayList < Phone >
      * with all matching mobile phone for the argument
      */
-    public static ArrayList<Phone> getMobilePhones(String searchedText) {
+    public ArrayList<Phone> getMobilePhones(String searchedText) {
         ArrayList<Phone> res = new ArrayList<Phone>();
         ArrayList<Phone> phones = getPhones(searchedText);
 

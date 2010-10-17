@@ -42,16 +42,18 @@ public class NotifyMatchingContactsAction extends Action {
     @Override
     public void execute(Intent intent) {
 
+        ContactsManager contactsManager = new ContactsManager(mContext);
+
         String searchedText = intent.getStringExtra("args");
 
-        ArrayList<Contact> contacts = ContactsManager.getMatchingContacts(searchedText);
+        ArrayList<Contact> contacts = contactsManager.getMatchingContacts(searchedText);
 
         if (contacts.size() > 0) {
             for (Contact contact : contacts) {
                 StringBuilder strContact = new StringBuilder();
                 strContact.append(makeBold(contact.name));
 
-                ArrayList<Phone> mobilePhones = ContactsManager.getPhones(contact.id);
+                ArrayList<Phone> mobilePhones = contactsManager.getPhones(contact.id);
                 if (mobilePhones.size() > 0) {
                     strContact.append("\r\n" + makeItalic("Phones"));
                     for (Phone phone : mobilePhones) {
@@ -59,7 +61,7 @@ public class NotifyMatchingContactsAction extends Action {
                     }
                 }
 
-                ArrayList<ContactAddress> emails = ContactsManager.getEmailAddresses(contact.id);
+                ArrayList<ContactAddress> emails = contactsManager.getEmailAddresses(contact.id);
                 if (emails.size() > 0) {
                     strContact.append("\r\n" + makeItalic("Emails"));
                     for (ContactAddress email : emails) {
@@ -67,7 +69,8 @@ public class NotifyMatchingContactsAction extends Action {
                     }
                 }
 
-                ArrayList<ContactAddress> addresses = ContactsManager.getPostalAddresses(contact.id);
+
+                ArrayList<ContactAddress> addresses = contactsManager.getPostalAddresses(contact.id);
                 if (addresses.size() > 0) {
                     strContact.append("\r\n" + makeItalic("Addresses"));
                     for (ContactAddress address : addresses) {
@@ -84,5 +87,4 @@ public class NotifyMatchingContactsAction extends Action {
             mContext.sendBroadcast(i);
         }
     }
-
 }
