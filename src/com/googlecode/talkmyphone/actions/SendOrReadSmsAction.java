@@ -29,7 +29,8 @@ public class SendOrReadSmsAction extends Action {
         if (phoneNumber == null) {
             appendResult("Reply contact is not set");
         } else {
-            String contact = ContactsManager.getContactName(phoneNumber);
+            ContactsManager contactsManager = new ContactsManager(mContext);
+            String contact = contactsManager.getContactName(phoneNumber);
             if (Phone.isCellPhoneNumber(phoneNumber) && contact.compareTo(phoneNumber) != 0){
                 contact += " (" + phoneNumber + ")";
             }
@@ -63,8 +64,8 @@ public class SendOrReadSmsAction extends Action {
 
     /** reads (count) SMS from all contacts matching pattern */
     private void readSMS(String searchedText) {
-
-        ArrayList<Contact> contacts = ContactsManager.getMatchingContacts(searchedText);
+        ContactsManager contactsManager = new ContactsManager(mContext);
+        ArrayList<Contact> contacts = contactsManager.getMatchingContacts(searchedText);
         ArrayList<Sms> sentSms = new ArrayList<Sms>();
 
         SharedPreferences prefs = mContext.getSharedPreferences("TalkMyPhone", 0);
@@ -81,7 +82,7 @@ public class SendOrReadSmsAction extends Action {
             for (Contact contact : contacts) {
                 ArrayList<Sms> smsList = SmsMmsManager.getSms(contact.id, contact.name);
                 if(displaySentSms) {
-                    smsList.addAll(SmsMmsManager.getSentSms(ContactsManager.getPhones(contact.id),sentSms));
+                    smsList.addAll(SmsMmsManager.getSentSms(contactsManager.getPhones(contact.id),sentSms));
                     Collections.sort(smsList);
                 }
 
@@ -112,11 +113,12 @@ public class SendOrReadSmsAction extends Action {
 
     /** sends a SMS to the specified contact */
     public void sendSMS(String message, String contact) {
+        ContactsManager contactsManager = new ContactsManager(mContext);
         if (Phone.isCellPhoneNumber(contact)) {
-            appendResult("Sending sms to " + ContactsManager.getContactName(contact));
+            appendResult("Sending sms to " + contactsManager.getContactName(contact));
             SmsMmsManager.sendSMSByPhoneNumber(message, contact);
         } else {
-            ArrayList<Phone> mobilePhones = ContactsManager.getMobilePhones(contact);
+            ArrayList<Phone> mobilePhones = contactsManager.getMobilePhones(contact);
             if (mobilePhones.size() > 1) {
                 appendResult("Specify more details:");
 

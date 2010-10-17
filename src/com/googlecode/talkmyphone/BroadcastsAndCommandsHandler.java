@@ -146,7 +146,7 @@ public class BroadcastsAndCommandsHandler {
 
         addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
                 new ConditionCommandIs("reply"),
-                new SendSmsToLastRecipientAction(),
+                new SendSmsToLastRecipientAction(mContext),
                 null);
 
         addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),

@@ -25,13 +25,14 @@ public class NotifySmsReceivedAction extends Action {
             XmppService service = XmppService.getInstance();
             if (service != null)
             {
+                ContactsManager contactsManager = new ContactsManager(mContext);
                 StringBuilder builder = new StringBuilder();
                 Object[] pdus = (Object[]) bundle.get("pdus");
                 msgs = new SmsMessage[pdus.length];
                 for (int i=0; i<msgs.length; i++) {
                     msgs[i] = SmsMessage.createFromPdu((byte[])pdus[i]);
                     builder.append("SMS from ");
-                    builder.append(ContactsManager.getContactName(msgs[i].getOriginatingAddress()));
+                    builder.append(contactsManager.getContactName(msgs[i].getOriginatingAddress()));
                     builder.append(": ");
                     builder.append(msgs[i].getMessageBody().toString());
                     builder.append("\n");

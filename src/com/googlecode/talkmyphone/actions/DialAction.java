@@ -10,14 +10,14 @@ import android.content.Intent;
 import android.net.Uri;
 
 public class DialAction extends Action {
-	
-	private Context mContext;
-	
-	public DialAction(Context context) {
-		mContext = context;
-	}
 
-	private boolean dial(String number) {
+    private Context mContext;
+
+    public DialAction(Context context) {
+        mContext = context;
+    }
+
+    private boolean dial(String number) {
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("tel:" + number));
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -26,8 +26,8 @@ public class DialAction extends Action {
         } catch (Exception e) {
             return false;
         }
-	}
-	
+    }
+
     @Override
     public void execute(Intent intent) {
         String searchedText = intent.getStringExtra("args");
@@ -35,11 +35,13 @@ public class DialAction extends Action {
         String number = null;
         String contact = null;
 
+        ContactsManager contactsManager = new ContactsManager(mContext);
+
         if (Phone.isCellPhoneNumber(searchedText)) {
             number = searchedText;
-            contact = ContactsManager.getContactName(number);
+            contact = contactsManager.getContactName(number);
         } else {
-            ArrayList<Phone> mobilePhones = ContactsManager.getMobilePhones(searchedText);
+            ArrayList<Phone> mobilePhones = contactsManager.getMobilePhones(searchedText);
             if (mobilePhones.size() > 1) {
                 appendResult("Specify more details:");
 
@@ -62,5 +64,4 @@ public class DialAction extends Action {
             }
         }
     }
-
 }
