@@ -4,12 +4,30 @@ import java.util.ArrayList;
 
 import com.googlecode.talkmyphone.contacts.ContactsManager;
 import com.googlecode.talkmyphone.contacts.Phone;
-import com.googlecode.talkmyphone.phone.PhoneManager;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 
 public class DialAction extends Action {
+	
+	private Context mContext;
+	
+	public DialAction(Context context) {
+		mContext = context;
+	}
 
+	private boolean dial(String number) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("tel:" + number));
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(intent);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+	}
+	
     @Override
     public void execute(Intent intent) {
         String searchedText = intent.getStringExtra("args");
@@ -39,7 +57,7 @@ public class DialAction extends Action {
 
         if( number != null) {
             appendResult("Dial " + contact + " (" + number + ")");
-            if(!PhoneManager.Dial(number)) {
+            if(!dial(number)) {
                 appendResult("Error can't dial.");
             }
         }

@@ -27,8 +27,6 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.googlecode.talkmyphone.geo.GeoManager;
-
 
 public class XmppService extends Service {
     // Currently this class needs to be instantiated from here
@@ -432,7 +430,6 @@ public class XmppService extends Service {
         mBroadcastsAndCommandsHandler.destroy();
         unregisterReceiver(mNetworkReceiver);
         unregisterReceiver(mMessageReceiver);
-        GeoManager.stopLocatingPhone();
 
         clearConnection();
 

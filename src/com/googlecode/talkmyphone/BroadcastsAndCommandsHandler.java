@@ -90,7 +90,7 @@ public class BroadcastsAndCommandsHandler {
                 new ActionsSequence(
                         new SendAction(mContext, "Stopping ongoing actions"),
                         new StopRingingAction(),
-                        new StopLocatingPhoneAction()
+                        new StopLocatingPhoneAction(mContext)
                         ),
                 null);
 
@@ -121,7 +121,7 @@ public class BroadcastsAndCommandsHandler {
 
         addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
                 new ConditionCommandIs("dial"),
-                new DialAction(),
+                new DialAction(mContext),
                 null);
 
         addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
@@ -151,12 +151,12 @@ public class BroadcastsAndCommandsHandler {
 
         addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
                 new ConditionCommandIs("where"),
-                new StartLocatingPhoneAction(),
+                new StartLocatingPhoneAction(mContext),
                 null);
 
         addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
                 new ConditionCommandIs("geo"),
-                new GeoAction(),
+                new GeoAction(mContext),
                 null);
 
         updateRulesFromSettings();
