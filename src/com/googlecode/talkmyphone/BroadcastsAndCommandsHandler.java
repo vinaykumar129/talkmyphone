@@ -4,8 +4,10 @@ import java.util.ArrayList;
 
 
 import com.googlecode.talkmyphone.actions.Action;
+import com.googlecode.talkmyphone.actions.ActionsSequence;
 import com.googlecode.talkmyphone.actions.CopyToClipBoardAction;
 import com.googlecode.talkmyphone.actions.DialAction;
+import com.googlecode.talkmyphone.actions.GeoAction;
 import com.googlecode.talkmyphone.actions.NotifyBatteryStateAction;
 import com.googlecode.talkmyphone.actions.NotifyMatchingContactsAction;
 import com.googlecode.talkmyphone.actions.NotifyResultOfActionAction;
@@ -15,6 +17,10 @@ import com.googlecode.talkmyphone.actions.NotifySmsSentAction;
 import com.googlecode.talkmyphone.actions.OpenAction;
 import com.googlecode.talkmyphone.actions.RingAction;
 import com.googlecode.talkmyphone.actions.SendAction;
+import com.googlecode.talkmyphone.actions.SendOrReadSmsAction;
+import com.googlecode.talkmyphone.actions.SendSmsToLastRecipientAction;
+import com.googlecode.talkmyphone.actions.StartLocatingPhoneAction;
+import com.googlecode.talkmyphone.actions.StopLocatingPhoneAction;
 import com.googlecode.talkmyphone.actions.StopRingingAction;
 import com.googlecode.talkmyphone.conditions.Condition;
 import com.googlecode.talkmyphone.conditions.ConditionCommandIs;
@@ -81,12 +87,11 @@ public class BroadcastsAndCommandsHandler {
 
         addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
                 new ConditionCommandIs("stop"),
-                new StopRingingAction(),
-                null);
-
-        addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
-                new ConditionCommandIs("stop"),
-                new SendAction(mContext, "Stopping ongoing actions"),
+                new ActionsSequence(
+                        new SendAction(mContext, "Stopping ongoing actions"),
+                        new StopRingingAction(),
+                        new StopLocatingPhoneAction()
+                        ),
                 null);
 
         addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
@@ -132,6 +137,26 @@ public class BroadcastsAndCommandsHandler {
         addRule(new IntentFilter("TALKMYPHONE_RESULT_OF_ACTION"),
                 null,
                 new NotifyResultOfActionAction(mContext),
+                null);
+
+        addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
+                new ConditionCommandIs("sms"),
+                new SendOrReadSmsAction(mContext),
+                null);
+
+        addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
+                new ConditionCommandIs("reply"),
+                new SendSmsToLastRecipientAction(),
+                null);
+
+        addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
+                new ConditionCommandIs("where"),
+                new StartLocatingPhoneAction(),
+                null);
+
+        addRule(new IntentFilter("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED"),
+                new ConditionCommandIs("geo"),
+                new GeoAction(),
                 null);
 
         updateRulesFromSettings();
