@@ -30,22 +30,27 @@ import android.widget.Toast;
 
 public class XmppService extends Service {
 
-    // To receive message to transmit to the user
-    private BroadcastReceiver mMessageReceiver;
-    // To know when there are connectivity problems
-    private BroadcastReceiver mNetworkReceiver;
+    // STATIC STUFF
+    // Possible connectivity states
+    private final static int DISCONNECTED = 0;
+    private final static int CONNECTING = 1;
+    private final static int CONNECTED = 2;
 
-    private static final int DISCONNECTED = 0;
-    private static final int CONNECTING = 1;
-    private static final int CONNECTED = 2;
+    // String to tag the log messages
+    public final static String LOG_TAG = "talkmyphone";
+    
+    // Intent broadcasted to the system when the user sends a command to talkmyphone via jabber
+    public final static String USER_COMMAND_RECEIVED = "com.googlecode.talkmyphone.USER_COMMAND_RECEIVED";
+    // Intent broadcasted by the system when it wants to send a message to the user via talkmyphone
+    public final static String MESSAGE_TO_TRANSMIT = "com.googlecode.talkmyphone.MESSAGE_TO_TRANSMIT";
 
-    // Indicates the current state of the service (disconnected/connecting/connected)
+    // Current state of the service (disconnected/connecting/connected)
     private int mStatus = DISCONNECTED;
 
     // Service instance
     private static XmppService instance = null;
 
-    // XMPP connection
+    // Connection settings
     private String mLogin;
     private String mPassword;
     private String mTo;
@@ -54,7 +59,7 @@ public class XmppService extends Service {
     private PacketListener mPacketListener = null;
     private boolean notifyApplicationConnection;
 
-    // notification stuff
+    // Notifications in the status bar methods and settings
     @SuppressWarnings("unchecked")
     private static final Class[] mStartForegroundSignature = new Class[] {
         int.class, Notification.class};
@@ -73,8 +78,16 @@ public class XmppService extends Service {
     Runnable mReconnectRunnable = null;
     Handler mReconnectHandler = new Handler();
 
-    public final static String LOG_TAG = "talkmyphone";
-    /** Updates the status about the service state (and the statusbar)*/
+
+    // Monitors the messages other applications want to pass to the user through TalkMyPhone
+    private BroadcastReceiver mMessageReceiver;
+    // Monitors the connectivity to re-initialize the connection when necessary
+    private BroadcastReceiver mNetworkReceiver;
+    
+    /** 
+     * Updates the status about the service state (and the status bar)
+     * @param status the status to set
+     */
     private void updateStatus(int status) {
         if (status != mStatus) {
             Notification notification = new Notification();
@@ -122,6 +135,7 @@ public class XmppService extends Service {
             mStatus = status;
         }
     }
+    
     /**
      * This is a wrapper around the startForeground method, using the older
      * APIs if it is not available.
@@ -320,7 +334,7 @@ public class XmppService extends Service {
                             args = "";
                         }
                         command = command.toLowerCase();
-                        Intent intent = new Intent("ACTION_TALKMYPHONE_USER_COMMAND_RECEIVED");
+                        Intent intent = new Intent(USER_COMMAND_RECEIVED);
                         intent.putExtra("command", command);
                         intent.putExtra("args", args);
                         sendBroadcast(intent);
@@ -376,7 +390,7 @@ public class XmppService extends Service {
                     send(message);
                 }
             };
-            registerReceiver(mMessageReceiver, new IntentFilter("ACTION_TALKMYPHONE_MESSAGE_TO_TRANSMIT"));
+            registerReceiver(mMessageReceiver, new IntentFilter(MESSAGE_TO_TRANSMIT));
             mNetworkReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
