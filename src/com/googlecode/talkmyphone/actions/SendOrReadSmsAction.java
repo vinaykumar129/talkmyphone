@@ -72,17 +72,18 @@ public class SendOrReadSmsAction extends Action {
         boolean displaySentSms = prefs.getBoolean("showSentSms", false);
         int smsNumber = prefs.getInt("smsNumber", 5);
 
+        SmsMmsManager smsMmsManager = new SmsMmsManager(mContext);
         if(displaySentSms) {
-            sentSms = SmsMmsManager.getAllSentSms();
+            sentSms = smsMmsManager.getAllSentSms();
         }
 
         if (contacts.size() > 0) {
             StringBuilder noSms = new StringBuilder();
             Boolean hasMatch = false;
             for (Contact contact : contacts) {
-                ArrayList<Sms> smsList = SmsMmsManager.getSms(contact.id, contact.name);
+                ArrayList<Sms> smsList = smsMmsManager.getSms(contact.id, contact.name);
                 if(displaySentSms) {
-                    smsList.addAll(SmsMmsManager.getSentSms(contactsManager.getPhones(contact.id),sentSms));
+                    smsList.addAll(smsMmsManager.getSentSms(contactsManager.getPhones(contact.id),sentSms));
                     Collections.sort(smsList);
                 }
 
@@ -113,10 +114,11 @@ public class SendOrReadSmsAction extends Action {
 
     /** sends a SMS to the specified contact */
     public void sendSMS(String message, String contact) {
+        SmsMmsManager smsMmsManager = new SmsMmsManager(mContext);
         ContactsManager contactsManager = new ContactsManager(mContext);
         if (Phone.isCellPhoneNumber(contact)) {
             appendResult("Sending sms to " + contactsManager.getContactName(contact));
-            SmsMmsManager.sendSMSByPhoneNumber(message, contact);
+            smsMmsManager.sendSMSByPhoneNumber(message, contact);
         } else {
             ArrayList<Phone> mobilePhones = contactsManager.getMobilePhones(contact);
             if (mobilePhones.size() > 1) {
@@ -128,7 +130,7 @@ public class SendOrReadSmsAction extends Action {
             } else if (mobilePhones.size() == 1) {
                 Phone phone = mobilePhones.get(0);
                 appendResult("Sending sms to " + phone.contactName + " (" + phone.cleanNumber + ")");
-                SmsMmsManager.sendSMSByPhoneNumber(message, phone.cleanNumber);
+                smsMmsManager.sendSMSByPhoneNumber(message, phone.cleanNumber);
             } else {
                 appendResult("No match for \"" + contact + "\"");
             }

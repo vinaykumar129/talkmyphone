@@ -19,10 +19,11 @@ public class SendSmsToLastRecipientAction extends Action {
 
     /** sends a SMS to the specified contact */
     private void sendSMS(String message, String contact) {
+        SmsMmsManager smsMmsManager = new SmsMmsManager(mContext);
         ContactsManager contactsManager = new ContactsManager(mContext);
         if (Phone.isCellPhoneNumber(contact)) {
             appendResult("Sending sms to " + contactsManager.getContactName(contact));
-            SmsMmsManager.sendSMSByPhoneNumber(message, contact);
+            smsMmsManager.sendSMSByPhoneNumber(message, contact);
         } else {
             ArrayList<Phone> mobilePhones = contactsManager.getMobilePhones(contact);
             if (mobilePhones.size() > 1) {
@@ -34,7 +35,7 @@ public class SendSmsToLastRecipientAction extends Action {
             } else if (mobilePhones.size() == 1) {
                 Phone phone = mobilePhones.get(0);
                 appendResult("Sending sms to " + phone.contactName + " (" + phone.cleanNumber + ")");
-                SmsMmsManager.sendSMSByPhoneNumber(message, phone.cleanNumber);
+                smsMmsManager.sendSMSByPhoneNumber(message, phone.cleanNumber);
             } else {
                 appendResult("No match for \"" + contact + "\"");
             }

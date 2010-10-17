@@ -5,24 +5,30 @@ import java.util.Date;
 
 import android.app.PendingIntent;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.telephony.gsm.SmsManager;
 
 import com.googlecode.talkmyphone.Tools;
-import com.googlecode.talkmyphone.XmppService;
 import com.googlecode.talkmyphone.contacts.Phone;
 
 public class SmsMmsManager {
+
+    private Context mContext;
+
+    public SmsMmsManager(Context context) {
+        mContext = context;
+    }
     // intents for sms sending
-    public static PendingIntent sentPI = PendingIntent.getBroadcast(XmppService.getInstance(), 0,
+    private PendingIntent sentPI = PendingIntent.getBroadcast(mContext, 0,
             new Intent("SMS_SENT"), 0);
-    public static PendingIntent deliveredPI = PendingIntent.getBroadcast(XmppService.getInstance(), 0,
+    private PendingIntent deliveredPI = PendingIntent.getBroadcast(mContext, 0,
             new Intent("SMS_DELIVERED"), 0);
 
     /** Sends a sms to the specified phone number */
-    public static void sendSMSByPhoneNumber(String message, String phoneNumber) {
+    public void sendSMSByPhoneNumber(String message, String phoneNumber) {
         SmsManager sms = SmsManager.getDefault();
         ArrayList<String> messages = sms.divideMessage(message);
         for (int i=0; i < messages.size(); i++) {
@@ -34,13 +40,13 @@ public class SmsMmsManager {
     /**
      * Returns a ArrayList of <Sms> with count sms where the contactId match the argument
      */
-    public static ArrayList<Sms> getSms(Long contactId, String contactName) {
+    public ArrayList<Sms> getSms(Long contactId, String contactName) {
         ArrayList<Sms> res = new ArrayList<Sms>();
 
         if(null != contactId) {
             Uri mSmsQueryUri = Uri.parse("content://sms/inbox");
             String columns[] = new String[] { "person", "address", "body", "date", "status"};
-            Cursor c = XmppService.getInstance().getContentResolver().query(mSmsQueryUri, columns, "person = " + contactId, null, null);
+            Cursor c = mContext.getContentResolver().query(mSmsQueryUri, columns, "person = " + contactId, null, null);
 
             if (c.getCount() > 0) {
                 for (boolean hasData = c.moveToFirst() ; hasData ; hasData = c.moveToNext()) {
@@ -62,12 +68,12 @@ public class SmsMmsManager {
     /**
      * Returns a ArrayList of <Sms> with count sms where the contactId match the argument
      */
-    public static ArrayList<Sms> getAllSentSms() {
+    public ArrayList<Sms> getAllSentSms() {
         ArrayList<Sms> res = new ArrayList<Sms>();
 
         Uri mSmsQueryUri = Uri.parse("content://sms/sent");
         String columns[] = new String[] { "address", "body", "date", "status"};
-        Cursor c = XmppService.getInstance().getContentResolver().query(mSmsQueryUri, columns, null, null, null);
+        Cursor c = mContext.getContentResolver().query(mSmsQueryUri, columns, null, null, null);
 
         if (c.getCount() > 0) {
             for (boolean hasData = c.moveToFirst() ; hasData ; hasData = c.moveToNext()) {
@@ -90,7 +96,7 @@ public class SmsMmsManager {
     /**
      * Returns a ArrayList of <Sms> with count sms where the contactId match the argument
      */
-    public static ArrayList<Sms> getSentSms(ArrayList<Phone> phones, ArrayList<Sms> sms) {
+    public ArrayList<Sms> getSentSms(ArrayList<Phone> phones, ArrayList<Sms> sms) {
         ArrayList<Sms> res = new ArrayList<Sms>();
 
         for (Sms aSms : sms) {
@@ -112,11 +118,11 @@ public class SmsMmsManager {
     }
 
     /** Adds the text of the message to the sent box */
-    public static void addSmsToSentBox(String message, String phoneNumber) {
+    public void addSmsToSentBox(String message, String phoneNumber) {
         ContentValues values = new ContentValues();
         values.put("address", phoneNumber);
         values.put("date", System.currentTimeMillis());
         values.put("body", message);
-        XmppService.getInstance().getContentResolver().insert(Uri.parse("content://sms/sent"), values);
+        mContext.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
     }
 }

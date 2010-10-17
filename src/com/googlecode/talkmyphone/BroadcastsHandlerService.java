@@ -9,6 +9,7 @@ import com.googlecode.talkmyphone.actions.CopyToClipBoardAction;
 import com.googlecode.talkmyphone.actions.DialAction;
 import com.googlecode.talkmyphone.actions.GeoAction;
 import com.googlecode.talkmyphone.actions.NotifyBatteryStateAction;
+import com.googlecode.talkmyphone.actions.NotifyCallAction;
 import com.googlecode.talkmyphone.actions.NotifyMatchingContactsAction;
 import com.googlecode.talkmyphone.actions.NotifyResultOfActionAction;
 import com.googlecode.talkmyphone.actions.NotifySmsDeliveredAction;
@@ -31,7 +32,7 @@ import android.content.IntentFilter;
 /**
  * This class monitors phone events and user actions and triggers actions on events when conditions are met
  */
-public class BroadcastsAndCommandsHandler {
+public class BroadcastsHandlerService {
 
     private Context mContext;
     private ArrayList<Rule> mRules = new ArrayList<Rule>();
@@ -54,7 +55,7 @@ public class BroadcastsAndCommandsHandler {
         }
     }
 
-    public BroadcastsAndCommandsHandler(Context context){
+    public BroadcastsHandlerService(Context context){
 
         mContext = context;
 
@@ -158,6 +159,11 @@ public class BroadcastsAndCommandsHandler {
                 new ConditionCommandIs("geo"),
                 new GeoAction(mContext),
                 null);
+
+        addRule(new IntentFilter("android.intent.action.PHONE_STATE"),
+                null,
+                new NotifyCallAction(mContext),
+                "notifyIncomingCalls");
 
         updateRulesFromSettings();
 
