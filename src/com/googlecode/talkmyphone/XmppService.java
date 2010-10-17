@@ -29,8 +29,6 @@ import android.widget.Toast;
 
 
 public class XmppService extends Service {
-    // Currently this class needs to be instantiated from here
-    private BroadcastsHandlerService mBroadcastsAndCommandsHandler;
 
     // To receive message to transmit to the user
     private BroadcastReceiver mMessageReceiver;
@@ -351,8 +349,6 @@ public class XmppService extends Service {
         {
             instance = this;
 
-            mBroadcastsAndCommandsHandler = new BroadcastsHandlerService(getApplicationContext());
-
             initNotificationStuff();
 
             updateStatus(DISCONNECTED);
@@ -427,7 +423,6 @@ public class XmppService extends Service {
 
     @Override
     public void onDestroy() {
-        mBroadcastsAndCommandsHandler.destroy();
         unregisterReceiver(mNetworkReceiver);
         unregisterReceiver(mMessageReceiver);
 
