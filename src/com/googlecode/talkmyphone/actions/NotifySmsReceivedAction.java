@@ -35,7 +35,8 @@ public class NotifySmsReceivedAction extends Action {
                     builder.append(": ");
                     builder.append(msgs[i].getMessageBody().toString());
                     builder.append("\n");
-                    service.setLastRecipient(msgs[i].getOriginatingAddress());
+                    // TODO : Fix that
+                    //service.setLastRecipient(msgs[i].getOriginatingAddress());
                 }
                 Intent i = new Intent("ACTION_TALKMYPHONE_MESSAGE_TO_TRANSMIT");
                 i.putExtra("message", builder.toString());
