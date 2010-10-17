@@ -1,14 +1,20 @@
 package com.googlecode.talkmyphone.actions;
 
-import com.googlecode.talkmyphone.XmppService;
-
 import android.content.Context;
 import android.content.Intent;
 
 public class NotifyBatteryStateAction extends Action {
-    private int lastPercentageNotified = -1;
+
+    private Context mContext;
+    private int lastPercentageNotified;
+
+    public NotifyBatteryStateAction (Context context) {
+        mContext = context;
+        lastPercentageNotified = -1;
+    }
+
     @Override
-    public void execute(Context context, Intent intent) {
+    public void execute(Intent intent) {
         int level = intent.getIntExtra("level", 0);
         if (lastPercentageNotified == -1) {
             notifyAndSavePercentage(level);
@@ -19,7 +25,9 @@ public class NotifyBatteryStateAction extends Action {
         }
     }
     private void notifyAndSavePercentage(int level) {
-        XmppService.getInstance().send("Battery level " + level + "%");
         lastPercentageNotified = level;
+        Intent i = new Intent("ACTION_TALKMYPHONE_MESSAGE_TO_TRANSMIT");
+        i.putExtra("message", "Battery level " + level + "%");
+        mContext.sendBroadcast(i);
     }
 }

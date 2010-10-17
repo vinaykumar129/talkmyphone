@@ -43,8 +43,14 @@ public class Rule {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     intent.putExtra("ResultCode", getResultCode());
-                    if (mCondition == null || mCondition.isTrue(context, intent)){
-                        mAction.execute(context, intent);
+                    if (mCondition == null || mCondition.isTrue(intent)){
+                        mAction.execute(intent);
+                        String res = mAction.getResult();
+                        if (res != null) {
+                            Intent i = new Intent("TALKMYPHONE_RESULT_OF_ACTION");
+                            i.putExtra("result", res);
+                            mContext.sendBroadcast(i);
+                        }
                     }
                 }
             };

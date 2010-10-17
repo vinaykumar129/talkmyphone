@@ -1,12 +1,11 @@
 package com.googlecode.talkmyphone.actions;
 
-import android.content.Context;
 import android.content.Intent;
 
 public class StopRingingAction extends Action {
 
     @Override
-    public void execute(Context context, Intent intent) {
+    public void execute(Intent intent) {
         RingAction.destroyPreviousPlayer();
     }
 

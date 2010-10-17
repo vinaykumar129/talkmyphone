@@ -15,7 +15,7 @@ public class CallReceiver extends BroadcastReceiver {
         boolean notifyIncomingCalls = prefs.getBoolean("notifyIncomingCalls", false);
 
         if (notifyIncomingCalls) {
-            PhoneCallListener phoneListener = new PhoneCallListener();
+            PhoneStateListener phoneListener = new PhoneCallListener(context);
             TelephonyManager telephony = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
             telephony.listen(phoneListener, PhoneStateListener.LISTEN_CALL_STATE);
         }

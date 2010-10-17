@@ -19,12 +19,14 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.location.Address;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -34,12 +36,17 @@ import com.googlecode.talkmyphone.contacts.Contact;
 import com.googlecode.talkmyphone.contacts.ContactsManager;
 import com.googlecode.talkmyphone.contacts.Phone;
 import com.googlecode.talkmyphone.geo.GeoManager;
-import com.googlecode.talkmyphone.phone.PhoneManager;
 import com.googlecode.talkmyphone.sms.Sms;
 import com.googlecode.talkmyphone.sms.SmsMmsManager;
 
 public class XmppService extends Service {
+    // Currently this class needs to be instantiated from here
     private BroadcastsAndCommandsHandler mBroadcastsAndCommandsHandler;
+
+    // To receive message to transmit to the user
+    private BroadcastReceiver mMessageReceiver;
+    // To know when there are connectivity problems
+    private BroadcastReceiver mNetworkReceiver;
 
     private static final int DISCONNECTED = 0;
     private static final int CONNECTING = 1;
@@ -389,6 +396,42 @@ public class XmppService extends Service {
                 }
             };
             initConnection();
+
+            mMessageReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    String message = intent.getStringExtra("message");
+                    send(message);
+                }
+            };
+            registerReceiver(mMessageReceiver, new IntentFilter("ACTION_TALKMYPHONE_MESSAGE_TO_TRANSMIT"));
+            mNetworkReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    XmppService service = XmppService.getInstance();
+                    if (service != null) {
+                        // is this notification telling us about a new network which is a
+                        // 'failover' due to another network stopping?
+                        boolean failover = intent.getBooleanExtra(ConnectivityManager.EXTRA_IS_FAILOVER, false);
+                        // Are we in a 'no connectivity' state?
+                        boolean nocon = intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false);
+                        NetworkInfo network = (NetworkInfo) intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
+                        // if no network, or if this is a "failover" notification
+                        // (meaning the network we are connected to has stopped)
+                        // and we are connected , we must disconnect.
+                        if (network == null || !network.isConnected() || (failover && service.isConnected())) {
+                            Log.i(XmppService.LOG_TAG, "network unavailable - closing connection");
+                            service.clearConnection();
+                        }
+                        // connect if not already connected (eg, if we disconnected above) and we have connectivity
+                        if (!nocon && !service.isConnected()) {
+                            Log.i(XmppService.LOG_TAG, "network available and not connected - connecting");
+                            service.initConnection();
+                        }
+                    }
+                }
+            };
+            registerReceiver(mNetworkReceiver, new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE"));
         }
     }
 
@@ -408,6 +451,9 @@ public class XmppService extends Service {
 
     @Override
     public void onDestroy() {
+        mBroadcastsAndCommandsHandler.destroy();
+        unregisterReceiver(mNetworkReceiver);
+        unregisterReceiver(mMessageReceiver);
         GeoManager.stopLocatingPhone();
 
         clearConnection();
@@ -420,7 +466,7 @@ public class XmppService extends Service {
     }
 
     /** sends a message to the user */
-    public void send(String message) {
+    private void send(String message) {
         if (isConnected()) {
             Message msg = new Message(mTo, Message.Type.chat);
             msg.setBody(message);
@@ -492,61 +538,18 @@ public class XmppService extends Service {
             else if (command.equals("geo")) {
                 geo(args);
             }
-            else if (command.equals("dial")) {
-                dial(args);
-            }
             else if (command.equals("where")) {
                 send("Start locating phone");
                 GeoManager.startLocatingPhone();
             }
             else if (command.equals("stop")) {
-                send("Stopping ongoing actions");
                 GeoManager.stopLocatingPhone();
-            }
-            else if (command.equals("http")) {
-                open("http:" + args);
-            }
-            else if (command.equals("https")) {
-                open("https:" + args);
             }
             else {
                 send('"'+ commandLine + '"' + ": unknown command. Send \"?\" for getting help");
             }
         } catch (Exception ex) {
             send("Error : " + ex);
-        }
-    }
-
-    /** dial the specified contact */
-    public void dial(String searchedText) {
-        String number = null;
-        String contact = null;
-
-        if (Phone.isCellPhoneNumber(searchedText)) {
-            number = searchedText;
-            contact = ContactsManager.getContactName(number);
-        } else {
-            ArrayList<Phone> mobilePhones = ContactsManager.getMobilePhones(searchedText);
-            if (mobilePhones.size() > 1) {
-                send("Specify more details:");
-
-                for (Phone phone : mobilePhones) {
-                    send(phone.contactName + " - " + phone.cleanNumber);
-                }
-            } else if (mobilePhones.size() == 1) {
-                Phone phone = mobilePhones.get(0);
-                contact = phone.contactName;
-                number = phone.cleanNumber;
-            } else {
-                send("No match for \"" + searchedText + "\"");
-            }
-        }
-
-        if( number != null) {
-            send("Dial " + contact + " (" + number + ")");
-            if(!PhoneManager.Dial(number)) {
-                send("Error can't dial.");
-            }
         }
     }
 
@@ -652,14 +655,4 @@ public class XmppService extends Service {
             // GeoManager.launchExternal("48.833199,2.362232");
         }
     }
-
-    /** lets the user choose an activity compatible with the url */
-    private void open(String url) {
-        Intent target = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-        Intent intent = Intent.createChooser(target, "TalkMyPhone: choose an activity");
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-    }
-
-
 }
