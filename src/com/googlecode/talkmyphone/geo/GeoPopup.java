@@ -41,7 +41,7 @@ public class GeoPopup extends Activity {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(intentUrl));
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-                        startActivity(intent);
+                        startActivity(Intent.createChooser(intent, "choose app"));
                     } catch (ActivityNotFoundException e) {
                         Toast.makeText(GeoPopup.this, "Activity not found", Toast.LENGTH_SHORT).show();
                     }

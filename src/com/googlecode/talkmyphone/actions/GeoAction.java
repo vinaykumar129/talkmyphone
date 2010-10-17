@@ -4,13 +4,22 @@ import java.util.List;
 
 import com.googlecode.talkmyphone.geo.GeoManager;
 
+import android.content.Context;
 import android.content.Intent;
 import android.location.Address;
 
 public class GeoAction extends Action {
+	
+	private Context mContext;
+	
+	public GeoAction(Context context) {
+		mContext = context;
+	}
 
     private void geo(String text) {
-        List<Address> addresses = GeoManager.geoDecode(text);
+    	GeoManager geoManager = new GeoManager(mContext);
+    	
+        List<Address> addresses = geoManager.geoDecode(text);
         if (addresses != null) {
             if (addresses.size() > 1) {
                 appendResult("Specify more details:");
@@ -22,7 +31,7 @@ public class GeoAction extends Action {
                     appendResult(addr.toString());
                 }
             } else if (addresses.size() == 1) {
-                GeoManager.launchExternal(addresses.get(0).getLatitude() + "," + addresses.get(0).getLongitude());
+                geoManager.launchExternal(addresses.get(0).getLatitude() + "," + addresses.get(0).getLongitude());
             }
         } else {
             appendResult("No match for \"" + text + "\"");
