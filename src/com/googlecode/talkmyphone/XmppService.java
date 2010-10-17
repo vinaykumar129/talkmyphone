@@ -30,7 +30,7 @@ import android.widget.Toast;
 
 public class XmppService extends Service {
     // Currently this class needs to be instantiated from here
-    private BroadcastsAndCommandsHandler mBroadcastsAndCommandsHandler;
+    private BroadcastsHandlerService mBroadcastsAndCommandsHandler;
 
     // To receive message to transmit to the user
     private BroadcastReceiver mMessageReceiver;
@@ -351,7 +351,7 @@ public class XmppService extends Service {
         {
             instance = this;
 
-            mBroadcastsAndCommandsHandler = new BroadcastsAndCommandsHandler(getApplicationContext());
+            mBroadcastsAndCommandsHandler = new BroadcastsHandlerService(getApplicationContext());
 
             initNotificationStuff();
 
