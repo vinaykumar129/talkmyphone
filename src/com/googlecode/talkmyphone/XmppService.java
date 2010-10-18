@@ -2,6 +2,8 @@ package com.googlecode.talkmyphone;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
+
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.XMPPConnection;
@@ -11,11 +13,14 @@ import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.app.ActivityManager.RunningServiceInfo;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -38,7 +43,7 @@ public class XmppService extends Service {
 
     // String to tag the log messages
     public final static String LOG_TAG = "talkmyphone";
-    
+
     // Intent broadcasted to the system when the user sends a command to talkmyphone via jabber
     public final static String USER_COMMAND_RECEIVED = "com.googlecode.talkmyphone.USER_COMMAND_RECEIVED";
     // Intent broadcasted by the system when it wants to send a message to the user via talkmyphone
@@ -46,9 +51,6 @@ public class XmppService extends Service {
 
     // Current state of the service (disconnected/connecting/connected)
     private int mStatus = DISCONNECTED;
-
-    // Service instance
-    private static XmppService instance = null;
 
     // Connection settings
     private String mLogin;
@@ -83,8 +85,8 @@ public class XmppService extends Service {
     private BroadcastReceiver mMessageReceiver;
     // Monitors the connectivity to re-initialize the connection when necessary
     private BroadcastReceiver mNetworkReceiver;
-    
-    /** 
+
+    /**
      * Updates the status about the service state (and the status bar)
      * @param status the status to set
      */
@@ -135,7 +137,7 @@ public class XmppService extends Service {
             mStatus = status;
         }
     }
-    
+
     /**
      * This is a wrapper around the startForeground method, using the older
      * APIs if it is not available.
@@ -358,71 +360,57 @@ public class XmppService extends Service {
     }
 
     private void _onStart() {
-        // Get configuration
-        if (instance == null)
-        {
-            instance = this;
+        initNotificationStuff();
+        updateStatus(DISCONNECTED);
 
-            initNotificationStuff();
+        // first, clean everything
+        clearConnection();
+        // then, re-import preferences
+        importPreferences();
+        mCurrentRetryCount = 0;
+        mReconnectRunnable = new Runnable() {
+            public void run() {
+                Log.v(LOG_TAG, "attempting reconnection");
+                Toast.makeText(XmppService.this, "Reconnecting", Toast.LENGTH_SHORT).show();
+                initConnection();
+            }
+        };
+        initConnection();
 
-            updateStatus(DISCONNECTED);
-
-            // first, clean everything
-            clearConnection();
-
-            // then, re-import preferences
-            importPreferences();
-
-            mCurrentRetryCount = 0;
-            mReconnectRunnable = new Runnable() {
-                public void run() {
-                    Log.v(LOG_TAG, "attempting reconnection");
-                    Toast.makeText(XmppService.this, "Reconnecting", Toast.LENGTH_SHORT).show();
-                    initConnection();
-                }
-            };
-            initConnection();
-
-            mMessageReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    String message = intent.getStringExtra("message");
-                    send(message);
-                }
-            };
-            registerReceiver(mMessageReceiver, new IntentFilter(MESSAGE_TO_TRANSMIT));
-            mNetworkReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    XmppService service = XmppService.getInstance();
-                    if (service != null) {
-                        // is this notification telling us about a new network which is a
-                        // 'failover' due to another network stopping?
-                        boolean failover = intent.getBooleanExtra(ConnectivityManager.EXTRA_IS_FAILOVER, false);
-                        // Are we in a 'no connectivity' state?
-                        boolean nocon = intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false);
-                        NetworkInfo network = (NetworkInfo) intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
-                        // if no network, or if this is a "failover" notification
-                        // (meaning the network we are connected to has stopped)
-                        // and we are connected , we must disconnect.
-                        if (network == null || !network.isConnected() || (failover && service.isConnected())) {
-                            Log.i(XmppService.LOG_TAG, "network unavailable - closing connection");
-                            service.clearConnection();
-                        }
-                        // connect if not already connected (eg, if we disconnected above) and we have connectivity
-                        if (!nocon && !service.isConnected()) {
-                            Log.i(XmppService.LOG_TAG, "network available and not connected - connecting");
-                            service.initConnection();
-                        }
+        mMessageReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String message = intent.getStringExtra("message");
+                send(message);
+            }
+        };
+        registerReceiver(mMessageReceiver, new IntentFilter(MESSAGE_TO_TRANSMIT));
+        mNetworkReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (isRunning(context)) {
+                    // is this notification telling us about a new network which is a
+                    // 'failover' due to another network stopping?
+                    boolean failover = intent.getBooleanExtra(ConnectivityManager.EXTRA_IS_FAILOVER, false);
+                    // Are we in a 'no connectivity' state?
+                    boolean nocon = intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false);
+                    NetworkInfo network = (NetworkInfo) intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
+                    // if no network, or if this is a "failover" notification
+                    // (meaning the network we are connected to has stopped)
+                    // and we are connected , we must disconnect.
+                    if (network == null || !network.isConnected() || (failover && isConnected())) {
+                        Log.i(XmppService.LOG_TAG, "network unavailable - closing connection");
+                        clearConnection();
+                    }
+                    // connect if not already connected (eg, if we disconnected above) and we have connectivity
+                    if (!nocon && !isConnected()) {
+                        Log.i(XmppService.LOG_TAG, "network available and not connected - connecting");
+                        initConnection();
                     }
                 }
-            };
-            registerReceiver(mNetworkReceiver, new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE"));
-        }
-    }
-
-    public static XmppService getInstance() {
-        return instance;
+            }
+        };
+        registerReceiver(mNetworkReceiver, new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE"));
     }
 
     @Override
@@ -439,13 +427,8 @@ public class XmppService extends Service {
     public void onDestroy() {
         unregisterReceiver(mNetworkReceiver);
         unregisterReceiver(mMessageReceiver);
-
         clearConnection();
-
         stopForegroundCompat(mStatus);
-
-        instance = null;
-
         Toast.makeText(this, "TalkMyPhone stopped", Toast.LENGTH_SHORT).show();
     }
 
@@ -456,5 +439,23 @@ public class XmppService extends Service {
             msg.setBody(message);
             mConnection.sendPacket(msg);
         }
+    }
+
+    /**
+     * Determines if the service is running
+     */
+    public static boolean isRunning(Context context) {
+        ActivityManager activityManager = (ActivityManager)context.getSystemService(ACTIVITY_SERVICE);
+        List<RunningServiceInfo> services = activityManager.getRunningServices(Integer.MAX_VALUE);
+
+        for (RunningServiceInfo serviceInfo : services) {
+            ComponentName componentName = serviceInfo.service;
+            String serviceName = componentName.getClassName();
+            if (serviceName.equals(XmppService.class.getName())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

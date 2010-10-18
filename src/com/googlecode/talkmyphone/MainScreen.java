@@ -30,7 +30,7 @@ public class MainScreen extends Activity {
         startStopButton.setOnClickListener(new OnClickListener() {
                 public void onClick(View v) {
                     Intent intent = new Intent(".TalkMyPhone.ACTION");
-                    if (XmppService.getInstance() == null) {
+                    if (!XmppService.isRunning(getApplicationContext())) {
                         startService(intent);
                     }
                     else {
