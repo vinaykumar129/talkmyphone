@@ -16,7 +16,9 @@
         <activity android:name=".Preferences"
                   android:label="@string/set_preferences">
         </activity>
-        <service android:enabled="true" android:name=".XmppService">
+        <service android:enabled="true"
+                 android:name=".XmppService"
+                 android:process=":remote">
             <intent-filter>
                 <action android:name=".TalkMyPhone.ACTION" />
             </intent-filter>
